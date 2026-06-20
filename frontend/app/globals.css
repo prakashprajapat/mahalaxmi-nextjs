@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #8B1A1A;      /* Deep maroon — Mahalaxmi brand */
+  --brand-secondary: #D4AF37;    /* Gold accent */
+  --brand-light: #FFF8F0;        /* Warm cream background */
+}
+
+body {
+  background-color: var(--brand-light);
+  color: #1a1a1a;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-[#8B1A1A] hover:bg-[#6e1414] text-white font-semibold px-6 py-2 rounded-lg transition-colors;
+  }
+  .btn-secondary {
+    @apply border border-[#8B1A1A] text-[#8B1A1A] hover:bg-[#8B1A1A] hover:text-white font-semibold px-6 py-2 rounded-lg transition-colors;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden;
+  }
+  .badge {
+    @apply inline-block px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
