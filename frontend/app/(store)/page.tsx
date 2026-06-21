@@ -33,28 +33,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Category Grid */}
-      <section className="section-wrap" id="categories">
-        <h2 className="section-heading">Shop by Category</h2>
-        <div className="category-grid">
-          {[
-            { label: 'Saree', href: '/saree', icon: '🥻', desc: 'Designer & ethnic sarees' },
-            { label: 'Nighty', href: '/nighty', icon: '🌙', desc: 'Comfortable nightwear' },
-            { label: 'Petticoat', href: '/petticoat', icon: '👗', desc: 'Quality inner skirts' },
-            { label: 'Women', href: '/women', icon: '👩', desc: "Women's fashion" },
-            { label: 'Men', href: '/men', icon: '👔', desc: "Men's wear" },
-            { label: 'Popline', href: '/popline', icon: '🧵', desc: 'Popline fabric rolls' },
-            { label: 'Nighty Cloth', href: '/nighty-cloth', icon: '🧶', desc: 'Fabric for tailoring' },
-            { label: 'Best Sellers', href: '/best-sellers', icon: '⭐', desc: 'Most loved products' },
-          ].map(cat => (
-            <Link key={cat.href} href={cat.href} className="category-card">
-              <div className="category-icon">{cat.icon}</div>
-              <div className="category-label">{cat.label}</div>
-              <div className="category-desc">{cat.desc}</div>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       {/* Best Sellers */}
       {bestSellers.length > 0 && (
