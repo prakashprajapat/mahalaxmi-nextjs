@@ -20,7 +20,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => { fetchProducts(); }, []);
 
-  const categories = [...new Set(products.map(p => p.category))];
+  const categories = Array.from(new Set(products.map(p => p.category)));
 
   const filtered = products.filter(p => {
     const matchSearch = !search ||
