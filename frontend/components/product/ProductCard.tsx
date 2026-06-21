@@ -3,9 +3,12 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { Product } from '@/types';
 import { addToCart } from '@/lib/cart';
+import { addToWishlist, isInWishlist } from '@/lib/wishlist';
 
 export default function ProductCard({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
+  const [wishlisted, setWishlisted] = useState(isInWishlist(product.dbId));
+
   const price = product.discountPrice ?? product.price;
   const saving = product.price > price ? Math.round(((product.price - price) / product.price) * 100) : 0;
 
@@ -17,61 +20,71 @@ export default function ProductCard({ product }: { product: Product }) {
     setTimeout(() => setAdded(false), 1500);
   };
 
-  return (
-    <Link href={`/products/${product.dbId}`} className="product-card" style={{ display: 'block', textDecoration: 'none' }}>
-      <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5' }}>
-        {product.image ? (
-          <img src={product.image} alt={product.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }}
-            onMouseEnter={e => { (e.target as HTMLImageElement).style.transform = 'scale(1.05)'; }}
-            onMouseLeave={e => { (e.target as HTMLImageElement).style.transform = 'scale(1)'; }}
-          />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', color: '#ddd' }}>
-            👗
-          </div>
-        )}
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addToWishlist(product);
+    setWishlisted(true);
+  };
 
-        {/* Badges */}
-        <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {product.bestSeller && (
-            <span className="badge badge-yellow">Best Seller</span>
+  return (
+    <div className="product-card">
+      {/* Image */}
+      <div className="product-card-img">
+        <Link href={`/products/${product.dbId}`}>
+          {product.image ? (
+            <img src={product.image} alt={product.name} />
+          ) : (
+            <div className="product-card-placeholder">👗</div>
           )}
-          {saving > 0 && (
-            <span className="badge badge-red">{saving}% off</span>
-          )}
+        </Link>
+
+        {/* Top badges */}
+        <div className="product-card-top-left">
+          {product.bestSeller && <span className="product-badge-new">Best Seller</span>}
+          {!product.bestSeller && <span className="product-badge-new">New</span>}
+          {saving > 0 && <span className="product-badge-sale">{saving}% off</span>}
         </div>
 
-        {/* Quick Add */}
-        <button onClick={handleAdd} className="quick-add-btn"
-          style={{
-            position: 'absolute', bottom: '8px', left: '8px', right: '8px',
-            background: '#a7354d', color: '#fff', border: 'none', borderRadius: '6px',
-            padding: '.5rem', fontSize: '.82rem', fontWeight: 600, cursor: 'pointer',
-            opacity: 0, transition: 'opacity .2s',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0'; }}
-        >
-          {added ? '✓ Added to Cart!' : '+ Add to Cart'}
+        {/* Wishlist */}
+        <button className={`product-wishlist-btn ${wishlisted ? 'active' : ''}`} onClick={handleWishlist} title="Add to Wishlist">
+          {wishlisted ? '❤️' : '🤍'}
         </button>
       </div>
 
+      {/* Body */}
       <div className="product-card-body">
-        <p style={{ fontSize: '.72rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '.2rem' }}>
-          {product.category}
-        </p>
-        <h3 style={{ margin: '0 0 .4rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {product.category && (
+          <p className="product-card-cat">{product.category.toUpperCase()}</p>
+        )}
+
+        <span className={`product-stock-badge ${product.stock === 'In Stock' ? 'in-stock' : 'out-stock'}`}>
+          {product.stock || 'In Stock'}
+        </span>
+
+        <Link href={`/products/${product.dbId}`} className="product-card-name">
           {product.name}
-        </h3>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '.4rem' }}>
+        </Link>
+
+        {/* Rating */}
+        <div className="product-rating">
+          <span className="stars">★★★★★</span>
+          <span className="rating-val">4.8</span>
+        </div>
+
+        {/* Price */}
+        <div className="product-price-row">
           <span className="price">₹{price.toLocaleString('en-IN')}</span>
           {saving > 0 && <span className="price-orig">₹{product.price.toLocaleString('en-IN')}</span>}
         </div>
-        <p style={{ fontSize: '.78rem', marginTop: '.3rem', color: product.stock === 'In Stock' ? '#27ae60' : '#e74c3c' }}>
-          {product.stock}
-        </p>
+
+        {/* Buttons */}
+        <button onClick={handleAdd} className="btn-add-cart">
+          {added ? '✓ Added!' : 'Add to Cart'}
+        </button>
+        <Link href={`/products/${product.dbId}`} className="btn-details">
+          Details &amp; Reviews
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
