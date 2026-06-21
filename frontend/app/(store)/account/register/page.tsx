@@ -116,8 +116,8 @@ export default function RegisterPage() {
         <section className="auth-stack">
           {/* Step Indicator */}
           <div className="wizard-steps">
-            <div className={`wiz-step ${step === 'details' ? 'active' : step !== 'details' ? 'done' : ''}`}>
-              <div className="wiz-circle">{step !== 'details' ? '✓' : '1'}</div>
+            <div className={`wiz-step ${step === 'details' ? 'active' : 'done'}`}>
+              <div className="wiz-circle">{step === 'details' ? '1' : '✓'}</div>
               <div className="wiz-label">Details</div>
             </div>
             <div className={`wiz-step ${step === 'emailOtp' ? 'active' : step === 'success' ? 'done' : ''}`}>

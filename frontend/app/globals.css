@@ -520,9 +520,31 @@ button { cursor: pointer; font-family: inherit; }
 }
 .whatsapp-float:hover { transform: scale(1.04); }
 
-/* ─── Safety list ─── */
+/* ─── Safety list & grid ─── */
 .safety-list { list-style: disc; padding-left: 1.2rem; font-size: .9rem; color: #555; }
 .safety-list li { margin-bottom: .5rem; }
+.safety-page { }
+.safety-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.safety-card { margin: 0 !important; }
+
+/* ─── Tracking page ─── */
+.tracking-page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.tracking-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 1.5rem 2rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+.tracking-card h2 { font-size: 1.15rem; font-weight: 700; color: var(--brand); margin: 0 0 1rem; }
+.tracking-form { display: flex; gap: .75rem; margin-bottom: 1rem; }
+.tracking-form input { flex: 1; border: 2px solid var(--border); border-radius: 8px; padding: .65rem 1rem; font-size: 1rem; outline: none; }
+.tracking-form input:focus { border-color: var(--brand); }
+.tracking-form button { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: .65rem 1.5rem; font-size: .95rem; font-weight: 700; cursor: pointer; transition: background .2s; }
+.tracking-form button:hover { background: var(--brand-dark); }
+.safety-inline-box { background: #fdf0f3; border: 1px solid #f5c6cf; border-radius: 8px; padding: .85rem 1rem; font-size: .88rem; color: #555; }
+.safety-inline-box strong { color: var(--brand); display: block; margin-bottom: .3rem; }
+
+/* ─── Footer app buttons ─── */
+.footer-app-row { display: flex; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
+.footer-app-btn { display: flex; align-items: center; gap: .5rem; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; padding: .5rem .75rem; color: #ccc; font-size: .78rem; cursor: default; }
+.footer-app-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+.footer-app-btn small { display: block; opacity: .7; font-size: .68rem; }
+.footer-app-btn strong { display: block; font-size: .82rem; }
 
 /* ─── Inline link ─── */
 .inline-link { color: var(--brand); text-decoration: underline; }

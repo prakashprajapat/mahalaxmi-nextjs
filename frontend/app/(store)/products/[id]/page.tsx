@@ -1,129 +1,175 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Link from 'next/link';
 import { productsApi } from '@/lib/api';
 import { addToCart } from '@/lib/cart';
+import { addToWishlist, isInWishlist } from '@/lib/wishlist';
 import type { Product } from '@/types';
 
-// Server component that passes data to client
 export default function ProductPage({ params }: { params: { id: string } }) {
-  return <ProductDetail id={Number(params.id)} />;
-}
-
-function ProductDetail({ id }: { id: number }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState('');
   const [added, setAdded] = useState(false);
+  const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  if (loading && !product) {
-    productsApi.getById(id).then(r => { setProduct(r.product); setLoading(false); });
-  }
+  useEffect(() => {
+    productsApi.getById(Number(params.id))
+      .then(r => {
+        setProduct(r.product);
+        setWishlisted(isInWishlist(r.product.dbId));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [params.id]);
 
   if (loading) return (
-    <div className="max-w-5xl mx-auto px-4 py-16 text-center text-gray-400">Loading...</div>
+    <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
+      Loading…
+    </div>
   );
   if (!product) return (
-    <div className="max-w-5xl mx-auto px-4 py-16 text-center text-gray-400">Product not found.</div>
+    <div style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+      <p style={{ color: '#aaa' }}>Product not found.</p>
+      <Link href="/products" className="button primary">Browse Products</Link>
+    </div>
   );
 
-  const price  = product.discountPrice ?? product.price;
-  const saving = product.price - price;
-  const savePct = product.price > 0 ? Math.round((saving / product.price) * 100) : 0;
+  const price = product.discountPrice ?? product.price;
+  const saving = product.price > price ? Math.round(((product.price - price) / product.price) * 100) : 0;
+  const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
   const handleAddToCart = () => {
     addToCart(product, qty, size || undefined);
     setAdded(true);
+    window.dispatchEvent(new Event('cart-updated'));
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const handleWishlist = () => {
+    addToWishlist(product);
+    setWishlisted(true);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <div className="grid md:grid-cols-2 gap-10">
-        {/* Image */}
-        <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50">
-          {product.image ? (
-            <Image src={product.image} alt={product.name} fill className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-300 text-6xl">👗</div>
-          )}
-          {product.bestSeller && (
-            <span className="absolute top-3 left-3 badge bg-[#D4AF37] text-white">Best Seller</span>
-          )}
-        </div>
+    <>
+      {/* Breadcrumb */}
+      <nav style={{ background: '#f9f9f9', borderBottom: '1px solid #eee', padding: '.6rem 1.5rem', fontSize: '.83rem', color: '#888' }}>
+        <Link href="/" style={{ color: '#a7354d' }}>Home</Link> &rsaquo;{' '}
+        <Link href="/products" style={{ color: '#a7354d' }}>Products</Link> &rsaquo;{' '}
+        {product.category && <><Link href={`/${product.category}`} style={{ color: '#a7354d' }}>{product.category}</Link> &rsaquo; </>}
+        <span>{product.name}</span>
+      </nav>
 
-        {/* Details */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide">{product.category}</p>
-            <h1 className="text-2xl font-bold text-gray-900 mt-1">{product.name}</h1>
-          </div>
+      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
 
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold text-[#8B1A1A]">₹{price.toLocaleString('en-IN')}</span>
-            {saving > 0 && (
-              <>
-                <span className="text-lg text-gray-400 line-through">₹{product.price.toLocaleString('en-IN')}</span>
-                <span className="badge bg-green-100 text-green-700">{savePct}% off</span>
-              </>
+          {/* Image */}
+          <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5' }}>
+            {product.image ? (
+              <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#ddd' }}>👗</div>
             )}
+            {product.bestSeller && <span className="badge badge-yellow" style={{ position: 'absolute', top: 12, left: 12 }}>Best Seller</span>}
+            {saving > 0 && <span className="badge badge-red" style={{ position: 'absolute', top: product.bestSeller ? 44 : 12, left: 12 }}>{saving}% off</span>}
           </div>
 
-          <p className={`text-sm font-medium ${product.stock === 'In Stock' ? 'text-green-600' : 'text-red-500'}`}>
-            {product.stock}
-          </p>
-
-          {/* Size selector (if sizes available in description) */}
-          {['S', 'M', 'L', 'XL', 'XXL', 'XXXL'].length > 0 && (
+          {/* Details */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <p className="text-sm font-semibold mb-2 text-gray-700">Select Size</p>
-              <div className="flex gap-2 flex-wrap">
-                {['S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setSize(s)}
-                    className={`w-12 h-10 rounded-lg border text-sm font-medium transition-colors
-                      ${size === s
-                        ? 'border-[#8B1A1A] bg-[#8B1A1A] text-white'
-                        : 'border-gray-300 hover:border-[#8B1A1A]'}`}
-                  >{s}</button>
+              <p style={{ fontSize: '.78rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '.35rem' }}>
+                {product.category}
+              </p>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: 700, margin: '0 0 .5rem', color: '#1a1a1a', lineHeight: 1.25 }}>{product.name}</h1>
+              <p style={{ fontSize: '.85rem', color: product.stock === 'In Stock' ? '#27ae60' : '#e74c3c', fontWeight: 600 }}>
+                {product.stock}
+              </p>
+            </div>
+
+            {/* Price */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '.75rem', flexWrap: 'wrap' }}>
+              <span className="price" style={{ fontSize: '2rem' }}>₹{price.toLocaleString('en-IN')}</span>
+              {saving > 0 && (
+                <>
+                  <span className="price-orig" style={{ fontSize: '1.1rem' }}>₹{product.price.toLocaleString('en-IN')}</span>
+                  <span style={{ background: '#e8f5e9', color: '#27ae60', padding: '.2rem .6rem', borderRadius: '20px', fontSize: '.82rem', fontWeight: 700 }}>
+                    Save {saving}%
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Size Selector */}
+            <div>
+              <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>Select Size</p>
+              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                {SIZES.map(s => (
+                  <button key={s} onClick={() => setSize(s)} style={{
+                    width: '44px', height: '40px', borderRadius: '6px', border: size === s ? '2px solid #a7354d' : '1.5px solid #ddd',
+                    background: size === s ? '#a7354d' : '#fff', color: size === s ? '#fff' : '#333',
+                    fontSize: '.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all .15s',
+                  }}>{s}</button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Quantity */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-700">Qty:</span>
-            <button onClick={() => setQty(q => Math.max(1, q - 1))}
-              className="w-8 h-8 rounded-lg border flex items-center justify-center hover:bg-gray-50">−</button>
-            <span className="w-8 text-center font-medium">{qty}</span>
-            <button onClick={() => setQty(q => q + 1)}
-              className="w-8 h-8 rounded-lg border flex items-center justify-center hover:bg-gray-50">+</button>
-          </div>
-
-          <div className="flex gap-3 mt-2">
-            <button onClick={handleAddToCart} className="btn-primary flex-1">
-              {added ? '✓ Added to Cart!' : 'Add to Cart'}
-            </button>
-            <button
-              onClick={() => { handleAddToCart(); router.push('/checkout'); }}
-              className="btn-secondary flex-1">
-              Buy Now
-            </button>
-          </div>
-
-          {product.description && (
-            <div className="border-t pt-4">
-              <h3 className="font-semibold mb-2 text-gray-800">Description</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{product.description}</p>
+            {/* Quantity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+              <span style={{ fontWeight: 600, fontSize: '.9rem' }}>Quantity:</span>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                <span style={{ width: '36px', textAlign: 'center', fontWeight: 700 }}>{qty}</span>
+                <button onClick={() => setQty(q => q + 1)} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+              </div>
             </div>
-          )}
+
+            {/* CTAs */}
+            <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
+              <button onClick={handleAddToCart} className="button primary" style={{ flex: 1, minWidth: '140px' }}>
+                {added ? '✓ Added to Cart!' : 'Add to Cart'}
+              </button>
+              <button onClick={() => { handleAddToCart(); router.push('/checkout'); }} className="button secondary" style={{ flex: 1, minWidth: '140px' }}>
+                Buy Now
+              </button>
+            </div>
+
+            <button onClick={handleWishlist} style={{ background: 'none', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem 1rem', cursor: 'pointer', color: wishlisted ? '#a7354d' : '#666', fontWeight: 600, fontSize: '.9rem', width: '100%' }}>
+              {wishlisted ? '❤️ Saved to Wishlist' : '🤍 Add to Wishlist'}
+            </button>
+
+            {/* WhatsApp */}
+            <a href={`https://wa.me/919429429880?text=Hi, I'm interested in: ${product.name}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '.5rem', color: '#25d366', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none' }}>
+              <span style={{ fontSize: '1.2rem' }}>💬</span> Order on WhatsApp
+            </a>
+
+            {/* Description */}
+            {product.description && (
+              <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                <h3 style={{ fontWeight: 700, marginBottom: '.5rem' }}>Product Details</h3>
+                <p style={{ color: '#555', fontSize: '.9rem', lineHeight: 1.7 }}>{product.description}</p>
+              </div>
+            )}
+
+            {/* Trust badges */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '.5rem', paddingTop: '.5rem', borderTop: '1px solid #eee' }}>
+              {[
+                { icon: '🚚', text: 'Fast Shipping' },
+                { icon: '🔄', text: '7-Day Return' },
+                { icon: '🔒', text: 'Secure Pay' },
+              ].map(b => (
+                <div key={b.text} style={{ textAlign: 'center', fontSize: '.75rem', color: '#777' }}>
+                  <div style={{ fontSize: '1.3rem' }}>{b.icon}</div>
+                  {b.text}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
