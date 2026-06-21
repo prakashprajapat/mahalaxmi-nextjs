@@ -12,28 +12,28 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="hero" id="hero">
+      <section style={{ position: 'relative', width: '100%' }}>
         <img
           src="/hero-banner.jpg"
-          alt="Mahalaxmi Fashion Hub"
-          className="hero-bg-img"
+          alt="Mahalaxmi Fashion Hub - Ethnic Wear for the Entire Family"
+          style={{ width: '100%', display: 'block' }}
         />
-        <div className="hero-content-overlay">
-          <p className="eyebrow" style={{ color: '#ffd6de' }}>New Arrivals 2026</p>
-          <h1 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: 800, margin: '0 0 .75rem', lineHeight: 1.15 }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 55%)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          padding: '0 4%'
+        }}>
+          <p style={{ color: '#ffd6de', fontSize: '.9rem', marginBottom: '.5rem', letterSpacing: 2 }}>NEW ARRIVALS 2026</p>
+          <h1 style={{ color: '#fff', fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 800, margin: '0 0 .75rem', lineHeight: 1.2, maxWidth: '50%' }}>
             Every Look,<br />A New Experience
           </h1>
-          <p className="hero-desc">
+          <p style={{ color: '#f0e6ea', fontSize: 'clamp(.8rem, 1.5vw, 1rem)', marginBottom: '1.25rem', maxWidth: '42%' }}>
             Designer sarees, daily nightwear, petticoats, and fabric essentials — boutique feel, honest support, fast WhatsApp ordering.
           </p>
-          <div className="hero-actions">
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <Link className="button primary" href="/saree">Shop Sarees</Link>
-            <Link className="button secondary" style={{ color: '#fff', borderColor: '#fff' }} href="/return-exchange">Return Policy</Link>
-          </div>
-          <div className="hero-badges">
-            <span>Premium edits</span>
-            <span>WhatsApp assistance</span>
-            <span>Return support</span>
+            <Link href="/return-exchange" style={{ color: '#fff', border: '1.5px solid #fff', padding: '.55rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '.95rem', textDecoration: 'none' }}>Return Policy</Link>
           </div>
         </div>
       </section>
