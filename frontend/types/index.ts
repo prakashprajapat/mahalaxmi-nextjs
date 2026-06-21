@@ -77,6 +77,8 @@ export interface Order {
   shippingPincode?: string;
   shippingState?: string;
   placedAt?: string;
+  deliveredAt?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
