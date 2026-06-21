@@ -20,9 +20,9 @@ export default async function HomePage() {
         />
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 55%)',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          padding: '0 4%'
+          background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          padding: '0 4% 3%'
         }}>
           <p style={{ color: '#ffd6de', fontSize: '.9rem', marginBottom: '.5rem', letterSpacing: 2 }}>NEW ARRIVALS 2026</p>
           <h1 style={{ color: '#fff', fontSize: 'clamp(1.6rem, 4vw, 2.8rem)', fontWeight: 800, margin: '0 0 .75rem', lineHeight: 1.2, maxWidth: '50%' }}>
