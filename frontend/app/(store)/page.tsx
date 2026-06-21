@@ -20,7 +20,6 @@ export default async function HomePage() {
         />
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
           display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
           padding: '0 4% 3%'
         }}>
