@@ -12,12 +12,7 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="hero" id="hero">
-        <img
-          src="https://images.pexels.com/photos/2220316/pexels-photo-2220316.jpeg?auto=compress&cs=tinysrgb&w=1200"
-          alt="Mahalaxmi Fashion Hub - Ethnic Wear"
-          className="hero-bg-img"
-        />
+      <section className="hero" id="hero" style={{ background: 'linear-gradient(135deg, #6b1a2e 0%, #a7354d 50%, #c0445e 100%)' }}>
         <div className="hero-content-overlay">
           <p className="eyebrow" style={{ color: '#ffd6de' }}>New Arrivals 2026</p>
           <h1 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: 800, margin: '0 0 .75rem', lineHeight: 1.15 }}>
