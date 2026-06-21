@@ -1,7 +1,7 @@
 const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  ...(process.env.NEXT_OUTPUT_STANDALONE === 'true' ? { output: 'standalone' } : {}),
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   webpack: (config) => {
