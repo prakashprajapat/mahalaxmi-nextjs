@@ -3,6 +3,10 @@ node_modules/
 .pnpm-store/
 .npm/
 
+# Output/Download folders
+download-output/
+outputs/
+
 # Next.js
 frontend/.next/
 frontend/out/
