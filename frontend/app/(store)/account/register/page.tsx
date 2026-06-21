@@ -180,14 +180,36 @@ export default function RegisterPage() {
                   <input type="password" value={form.confirmPw} onChange={set('confirmPw')}
                     placeholder="Re-enter password" required autoComplete="new-password" />
                 </label>
-                <label>
-                  Date of Birth
-                  <input type="date" value={form.dob} onChange={set('dob')} autoComplete="bday" />
-                </label>
-                <label>
-                  Anniversary Date
-                  <input type="date" value={form.anniv} onChange={set('anniv')} />
-                </label>
+                {/* Birthday & Anniversary Special Offers Box */}
+                <div className="full-field" style={{
+                  background: 'linear-gradient(135deg, #fff0f3 0%, #fff8e1 100%)',
+                  border: '2px dashed #a7354d',
+                  borderRadius: '12px',
+                  padding: '1.25rem 1.25rem .75rem',
+                  marginTop: '.5rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', marginBottom: '.5rem' }}>
+                    <span style={{ fontSize: '1.6rem' }}>🎁</span>
+                    <div>
+                      <p style={{ fontWeight: 700, color: '#a7354d', fontSize: '.95rem', margin: 0 }}>
+                        Get Special Birthday &amp; Anniversary Offers!
+                      </p>
+                      <p style={{ color: '#666', fontSize: '.82rem', margin: '2px 0 0' }}>
+                        Enter your dates below to receive exclusive discounts and surprises on your special days.
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.75rem', marginTop: '.75rem' }}>
+                    <label>
+                      🎂 Date of Birth
+                      <input type="date" value={form.dob} onChange={set('dob')} autoComplete="bday" />
+                    </label>
+                    <label>
+                      💍 Anniversary Date
+                      <input type="date" value={form.anniv} onChange={set('anniv')} />
+                    </label>
+                  </div>
+                </div>
 
                 <label className="full-field">
                   Address Line 1 <span className="required-mark">*</span>
