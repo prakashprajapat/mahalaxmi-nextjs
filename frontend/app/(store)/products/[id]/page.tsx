@@ -7,11 +7,25 @@ import { addToCart } from '@/lib/cart';
 import { addToWishlist, isInWishlist } from '@/lib/wishlist';
 import type { Product } from '@/types';
 
+interface ExtraJson {
+  sizes?: string[];
+  colors?: string[];
+  colorCodes?: Record<string, string>;
+  variantMatrix?: Record<string, number>;
+  sizeStock?: Record<string, number>;
+  colorStock?: Record<string, number>;
+  images?: string[];
+  packImages?: string[];
+}
+
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
+  const [extra, setExtra] = useState<ExtraJson>({});
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [activeImg, setActiveImg] = useState('');
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -21,6 +35,10 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       .then(r => {
         setProduct(r.product);
         setWishlisted(isInWishlist(r.product.dbId));
+        let ex: ExtraJson = {};
+        try { ex = JSON.parse((r.product as any).extraJson ?? '{}'); } catch { ex = {}; }
+        setExtra(ex);
+        setActiveImg(r.product.image ?? '');
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -40,9 +58,25 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
   const price = product.discountPrice ?? product.price;
   const saving = product.price > price ? Math.round(((product.price - price) / product.price) * 100) : 0;
-  const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+
+  // Build gallery
+  const gallery: string[] = [];
+  if (product.image) gallery.push(product.image);
+  (extra.images ?? []).forEach(img => { if (img && !gallery.includes(img)) gallery.push(img); });
+  (extra.packImages ?? []).forEach(img => { if (img && !gallery.includes(img)) gallery.push(img); });
+
+  // Sizes from variantMatrix keys or sizes array
+  const sizes: string[] = extra.sizes ?? (extra.variantMatrix ? [...new Set(Object.keys(extra.variantMatrix).map(k => k.split('|')[0]))] : []);
+  const colors: string[] = extra.colors ?? (extra.variantMatrix ? [...new Set(Object.keys(extra.variantMatrix).map(k => k.split('|')[1]).filter(Boolean))] : []);
+  const colorCodes: Record<string, string> = extra.colorCodes ?? {};
+
+  // Stock for selected variant
+  const variantKey = colors.length > 0 ? `${size}|${color}` : size;
+  const variantStock = extra.variantMatrix ? (extra.variantMatrix[variantKey] ?? null) : null;
+  const outOfStock = variantStock !== null && variantStock === 0;
 
   const handleAddToCart = () => {
+    if (outOfStock) return;
     addToCart(product, qty, size || undefined);
     setAdded(true);
     window.dispatchEvent(new Event('cart-updated'));
@@ -67,15 +101,32 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
 
-          {/* Image */}
-          <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5' }}>
-            {product.image ? (
-              <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#ddd' }}>👗</div>
+          {/* Image Gallery */}
+          <div>
+            {/* Main Image */}
+            <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5', marginBottom: '.75rem' }}>
+              {activeImg ? (
+                <img src={activeImg} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#ddd' }}>👗</div>
+              )}
+              {product.bestSeller && <span className="badge badge-yellow" style={{ position: 'absolute', top: 12, left: 12 }}>Best Seller</span>}
+              {saving > 0 && <span className="badge badge-red" style={{ position: 'absolute', top: product.bestSeller ? 44 : 12, left: 12 }}>{saving}% off</span>}
+            </div>
+            {/* Thumbnails */}
+            {gallery.length > 1 && (
+              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                {gallery.map((img, i) => (
+                  <button key={i} onClick={() => setActiveImg(img)} style={{
+                    width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden',
+                    border: activeImg === img ? '2px solid #a7354d' : '2px solid #eee',
+                    padding: 0, cursor: 'pointer', background: '#f5f5f5', flexShrink: 0,
+                  }}>
+                    <img src={img} alt={`View ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
             )}
-            {product.bestSeller && <span className="badge badge-yellow" style={{ position: 'absolute', top: 12, left: 12 }}>Best Seller</span>}
-            {saving > 0 && <span className="badge badge-red" style={{ position: 'absolute', top: product.bestSeller ? 44 : 12, left: 12 }}>{saving}% off</span>}
           </div>
 
           {/* Details */}
@@ -103,19 +154,55 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               )}
             </div>
 
-            {/* Size Selector */}
-            <div>
-              <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>Select Size</p>
-              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                {SIZES.map(s => (
-                  <button key={s} onClick={() => setSize(s)} style={{
-                    width: '44px', height: '40px', borderRadius: '6px', border: size === s ? '2px solid #a7354d' : '1.5px solid #ddd',
-                    background: size === s ? '#a7354d' : '#fff', color: size === s ? '#fff' : '#333',
-                    fontSize: '.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all .15s',
-                  }}>{s}</button>
-                ))}
+            {/* Color Chips */}
+            {colors.length > 0 && (
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>
+                  Select Color {color && <span style={{ fontWeight: 400, color: '#888' }}>— {color}</span>}
+                </p>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  {colors.map(c => (
+                    <button key={c} onClick={() => setColor(c)} title={c} style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      background: colorCodes[c] ?? '#ccc',
+                      border: color === c ? '3px solid #a7354d' : '2px solid #ddd',
+                      cursor: 'pointer', outline: color === c ? '2px solid #a7354d' : 'none',
+                      outlineOffset: '2px', transition: 'all .15s',
+                    }} />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Size Chips */}
+            {sizes.length > 0 && (
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>Select Size</p>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  {sizes.map(s => {
+                    const vKey = colors.length > 0 ? `${s}|${color}` : s;
+                    const stock = extra.variantMatrix ? (extra.variantMatrix[vKey] ?? null) : null;
+                    const oos = stock !== null && stock === 0;
+                    return (
+                      <button key={s} onClick={() => !oos && setSize(s)} disabled={oos} style={{
+                        minWidth: '44px', height: '40px', padding: '0 .75rem', borderRadius: '6px',
+                        border: size === s ? '2px solid #a7354d' : '1.5px solid #ddd',
+                        background: oos ? '#f5f5f5' : size === s ? '#a7354d' : '#fff',
+                        color: oos ? '#ccc' : size === s ? '#fff' : '#333',
+                        fontSize: '.85rem', fontWeight: 600,
+                        cursor: oos ? 'not-allowed' : 'pointer', transition: 'all .15s',
+                        textDecoration: oos ? 'line-through' : 'none',
+                      }}>{s}</button>
+                    );
+                  })}
+                </div>
+                {variantStock !== null && (
+                  <p style={{ fontSize: '.8rem', marginTop: '.4rem', color: outOfStock ? '#e74c3c' : '#27ae60', fontWeight: 600 }}>
+                    {outOfStock ? 'Out of stock for this selection' : `${variantStock} in stock`}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Quantity */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
@@ -129,10 +216,10 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
-              <button onClick={handleAddToCart} className="button primary" style={{ flex: 1, minWidth: '140px' }}>
-                {added ? '✓ Added to Cart!' : 'Add to Cart'}
+              <button onClick={handleAddToCart} disabled={outOfStock} className="button primary" style={{ flex: 1, minWidth: '140px', opacity: outOfStock ? .5 : 1 }}>
+                {outOfStock ? 'Out of Stock' : added ? '✓ Added to Cart!' : 'Add to Cart'}
               </button>
-              <button onClick={() => { handleAddToCart(); router.push('/checkout'); }} className="button secondary" style={{ flex: 1, minWidth: '140px' }}>
+              <button onClick={() => { if (!outOfStock) { handleAddToCart(); router.push('/checkout'); } }} disabled={outOfStock} className="button secondary" style={{ flex: 1, minWidth: '140px', opacity: outOfStock ? .5 : 1 }}>
                 Buy Now
               </button>
             </div>

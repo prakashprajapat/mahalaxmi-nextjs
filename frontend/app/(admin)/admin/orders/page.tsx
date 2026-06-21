@@ -9,6 +9,29 @@ const ALL_STATUSES = [
   'Shipped', 'Transit', 'Delivered', 'Return Requested', 'Cancelled',
 ];
 
+function exportCSV(orders: Order[]) {
+  const header = ['Order ID', 'Date', 'Customer', 'Phone', 'Email', 'City', 'State', 'Total', 'Method', 'Status', 'AWB'];
+  const rows = orders.map(o => [
+    o.id,
+    new Date(o.placedAt ?? o.createdAt).toLocaleDateString('en-IN'),
+    o.customerName ?? '',
+    o.customerPhone ?? '',
+    (o as any).customerEmail ?? '',
+    (o as any).shippingCity ?? '',
+    (o as any).shippingState ?? '',
+    o.total,
+    o.method,
+    o.status,
+    o.awb ?? '',
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,62 +75,70 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">Orders</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '.75rem' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1a1a1a' }}>Orders</h1>
+        <button
+          onClick={() => exportCSV(filtered)}
+          style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: '8px', padding: '.5rem 1.25rem', fontSize: '.88rem', fontWeight: 600, cursor: 'pointer' }}>
+          ⬇️ Export CSV ({filtered.length})
+        </button>
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', marginBottom: '1rem', alignItems: 'center' }}>
         <input
           placeholder="Search by ID, name, phone..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm w-64"
+          style={{ border: '1.5px solid #ddd', borderRadius: '8px', padding: '.5rem .75rem', fontSize: '.88rem', width: '260px' }}
         />
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm">
+          style={{ border: '1.5px solid #ddd', borderRadius: '8px', padding: '.5rem .75rem', fontSize: '.88rem' }}>
           <option value="">All Statuses</option>
           {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <span className="text-sm text-gray-500 self-center">{filtered.length} orders</span>
+        <span style={{ fontSize: '.85rem', color: '#888' }}>{filtered.length} orders</span>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,.07)', overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.88rem' }}>
+            <thead style={{ background: '#f9f9f9' }}>
               <tr>
                 {['Order ID', 'Date', 'Customer', 'Phone', 'Amount', 'Method', 'Status', 'Action'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                  <th key={h} style={{ padding: '.75rem 1rem', textAlign: 'left', fontWeight: 600, fontSize: '.75rem', color: '#888', textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading...</td></tr>
-              ) : filtered.map(o => (
-                <tr key={o.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs">{o.id}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#aaa' }}>Loading...</td></tr>
+              ) : filtered.map((o, i) => (
+                <tr key={o.id} style={{ borderTop: i > 0 ? '1px solid #f5f5f5' : undefined }}>
+                  <td style={{ padding: '.75rem 1rem', fontFamily: 'monospace', fontSize: '.78rem', color: '#555' }}>{o.id}</td>
+                  <td style={{ padding: '.75rem 1rem', fontSize: '.78rem', color: '#888' }}>
                     {new Date(o.placedAt ?? o.createdAt).toLocaleDateString('en-IN')}
                   </td>
-                  <td className="px-4 py-3">{o.customerName || '—'}</td>
-                  <td className="px-4 py-3 text-xs">{o.customerPhone || '—'}</td>
-                  <td className="px-4 py-3 font-medium">₹{o.total.toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-3 capitalize">{o.method}</td>
-                  <td className="px-4 py-3">
-                    <span className={`badge text-xs ${
-                      o.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-                      o.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
-                      'bg-yellow-100 text-yellow-700'}`}>
+                  <td style={{ padding: '.75rem 1rem' }}>{o.customerName || '—'}</td>
+                  <td style={{ padding: '.75rem 1rem', fontSize: '.82rem' }}>{o.customerPhone || '—'}</td>
+                  <td style={{ padding: '.75rem 1rem', fontWeight: 600 }}>₹{o.total.toLocaleString('en-IN')}</td>
+                  <td style={{ padding: '.75rem 1rem', textTransform: 'capitalize' }}>{o.method}</td>
+                  <td style={{ padding: '.75rem 1rem' }}>
+                    <span style={{
+                      fontSize: '.75rem', fontWeight: 700, padding: '.25rem .65rem', borderRadius: '12px',
+                      background: o.status === 'Delivered' ? '#e8f5e9' : o.status === 'Cancelled' ? '#fdecea' : '#fff3cd',
+                      color: o.status === 'Delivered' ? '#2e7d32' : o.status === 'Cancelled' ? '#c62828' : '#856404',
+                    }}>
                       {o.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td style={{ padding: '.75rem 1rem' }}>
                     <button
                       onClick={() => { setSelected(o); setNewStatus(o.status); setAwb(o.awb ?? ''); }}
-                      className="text-[#8B1A1A] hover:underline text-xs">
+                      style={{ color: '#a7354d', background: 'none', border: 'none', cursor: 'pointer', fontSize: '.82rem', fontWeight: 600 }}>
                       Update
                     </button>
                   </td>
@@ -120,27 +151,31 @@ export default function AdminOrdersPage() {
 
       {/* Update Modal */}
       {selected && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="font-bold mb-4">Update Order #{selected.id}</h3>
-            <div className="space-y-3">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1rem' }}>
+          <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', width: '100%', maxWidth: '380px' }}>
+            <h3 style={{ fontWeight: 700, marginBottom: '1.25rem' }}>Update Order #{selected.id}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
               <div>
-                <label className="text-sm text-gray-600 block mb-1">Status</label>
+                <label style={{ fontSize: '.85rem', color: '#555', display: 'block', marginBottom: '.3rem' }}>Status</label>
                 <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm">
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem' }}>
                   {ALL_STATUSES.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-600 block mb-1">AWB / Tracking Number</label>
+                <label style={{ fontSize: '.85rem', color: '#555', display: 'block', marginBottom: '.3rem' }}>AWB / Tracking Number</label>
                 <input value={awb} onChange={e => setAwb(e.target.value)}
                   placeholder="Optional"
-                  className="w-full border rounded-lg px-3 py-2 text-sm" />
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
               </div>
             </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setSelected(null)} className="btn-secondary flex-1 text-sm">Cancel</button>
-              <button onClick={handleUpdate} disabled={updating} className="btn-primary flex-1 text-sm">
+            <div style={{ display: 'flex', gap: '.75rem', marginTop: '1.25rem' }}>
+              <button onClick={() => setSelected(null)}
+                style={{ flex: 1, background: '#f5f5f5', color: '#555', border: 'none', borderRadius: '8px', padding: '.65rem', cursor: 'pointer', fontWeight: 600 }}>
+                Cancel
+              </button>
+              <button onClick={handleUpdate} disabled={updating}
+                style={{ flex: 1, background: '#a7354d', color: '#fff', border: 'none', borderRadius: '8px', padding: '.65rem', cursor: updating ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: updating ? .7 : 1 }}>
                 {updating ? 'Saving...' : 'Update'}
               </button>
             </div>

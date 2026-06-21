@@ -66,6 +66,12 @@ export const ordersApi = {
       method: 'POST',
       body: JSON.stringify(order),
     }),
+  cancel: (orderId: string, token: string) =>
+    request(`/orders/${orderId}/cancel`, { method: 'PATCH' }, token),
+  requestReturn: (orderId: string, reason: string, token: string) =>
+    request(`/orders/${orderId}/return`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
+  getByCustomer: (token: string) =>
+    request<{ success: boolean; orders: import('@/types').Order[] }>('/orders/my', undefined, token),
   updateStatus: (data: { orderId: string; status: string; awb?: string }, token: string) =>
     request('/orders/status', { method: 'PATCH', body: JSON.stringify(data) }, token),
 };
@@ -128,4 +134,20 @@ export const paymentsApi = {
     ),
   verify: (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
     request('/payments/verify', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+export const reviewsApi = {
+  getPending: (token: string) =>
+    request<{ success: boolean; reviews: import('@/types').Review[] }>('/reviews/pending', undefined, token),
+  getByProduct: (productId: number) =>
+    request<{ success: boolean; reviews: import('@/types').Review[] }>(`/reviews/product/${productId}`),
+  submit: (data: { productId: number; rating: number; text: string; orderId?: string }, token: string) =>
+    request<{ success: boolean }>('/reviews', { method: 'POST', body: JSON.stringify(data) }, token),
+  approve: (id: number, token: string) =>
+    request(`/reviews/${id}/approve`, { method: 'PATCH' }, token),
+  reject: (id: number, token: string) =>
+    request(`/reviews/${id}/reject`, { method: 'PATCH' }, token),
+  delete: (id: number, token: string) =>
+    request(`/reviews/${id}`, { method: 'DELETE' }, token),
 };

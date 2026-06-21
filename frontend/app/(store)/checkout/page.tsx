@@ -6,6 +6,32 @@ import { getCustomer, getToken } from '@/lib/auth';
 import { ordersApi, paymentsApi } from '@/lib/api';
 import type { CartItem, Customer } from '@/types';
 
+function getPincodeState(pincode: string): string {
+  if (pincode.length < 2) return '';
+  const prefix = parseInt(pincode.substring(0, 2), 10);
+  if (prefix === 11) return 'Delhi';
+  if (prefix >= 12 && prefix <= 13) return 'Haryana';
+  if (prefix >= 14 && prefix <= 16) return 'Punjab';
+  if (prefix === 17) return 'Himachal Pradesh';
+  if (prefix >= 18 && prefix <= 19) return 'Jammu & Kashmir';
+  if (prefix >= 20 && prefix <= 28) return 'Uttar Pradesh';
+  if (prefix >= 30 && prefix <= 34) return 'Rajasthan';
+  if (prefix >= 36 && prefix <= 39) return 'Gujarat';
+  if (prefix >= 40 && prefix <= 44) return 'Maharashtra';
+  if (prefix >= 45 && prefix <= 49) return 'Madhya Pradesh';
+  if (prefix >= 50 && prefix <= 53) return 'Telangana';
+  if (prefix >= 56 && prefix <= 59) return 'Karnataka';
+  if (prefix >= 60 && prefix <= 64) return 'Tamil Nadu';
+  if (prefix >= 67 && prefix <= 69) return 'Kerala';
+  if (prefix >= 70 && prefix <= 74) return 'West Bengal';
+  if (prefix >= 75 && prefix <= 77) return 'Odisha';
+  if (prefix === 78) return 'Assam';
+  if (prefix === 79) return 'Arunachal Pradesh';
+  if (prefix >= 80 && prefix <= 85) return 'Bihar';
+  if (prefix >= 90 && prefix <= 97) return 'Jharkhand';
+  return '';
+}
+
 type Step = 'shipping' | 'payment' | 'confirm';
 
 export default function CheckoutPage() {
@@ -17,8 +43,10 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState('');
 
   const [shipping, setShipping] = useState({
-    name: '', phone: '', address: '', city: '', pincode: '', state: '',
+    name: '', email: '', phone: '', address: '', city: '', pincode: '', state: '',
   });
+
+  const [panData, setPanData] = useState({ panNumber: '', panName: '' });
 
   useEffect(() => {
     const c = getCart();
@@ -30,6 +58,7 @@ export default function CheckoutPage() {
       setShipping(s => ({
         ...s,
         name: `${cust.firstName} ${cust.lastName}`,
+        email: cust.email ?? '',
         phone: cust.phone,
         address: cust.addrLine1,
         city: cust.district,
@@ -37,13 +66,44 @@ export default function CheckoutPage() {
         state: cust.state,
       }));
     }
+    // Pre-fill PAN from localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem('mfh-pan') ?? '{}');
+      if (saved.panNumber) setPanData({ panNumber: saved.panNumber, panName: saved.panName ?? '' });
+    } catch {}
   }, [router]);
 
   const subtotal = cartTotal(cart);
   const shippingCost = subtotal >= 999 ? 0 : 60;
   const total = subtotal + shippingCost;
+  const requiresPan = total > 2000;
+
+  const handlePincodeChange = (val: string) => {
+    const state = val.length >= 2 ? getPincodeState(val) : '';
+    setShipping(s => ({ ...s, pincode: val, ...(state ? { state } : {}) }));
+  };
+
+  const validateShipping = () => {
+    if (!shipping.name || !shipping.phone || !shipping.address || !shipping.city || !shipping.pincode || !shipping.state) {
+      alert('Please fill all shipping fields.');
+      return false;
+    }
+    if (requiresPan) {
+      if (!panData.panNumber || !panData.panName) {
+        alert('PAN card details are required for orders above ₹2000.');
+        return false;
+      }
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(panData.panNumber.toUpperCase())) {
+        alert('Please enter a valid PAN number (e.g. ABCDE1234F).');
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleCod = async () => {
+    if (!validateShipping()) return;
     setLoading(true);
     try {
       const oid = `MFH${Date.now()}`;
@@ -71,7 +131,10 @@ export default function CheckoutPage() {
         total: total + 50,
         customerId: customer?.id?.toString(),
         customerName: shipping.name,
+        customerEmail: shipping.email,
         customerPhone: shipping.phone,
+        panNumber: requiresPan ? panData.panNumber : undefined,
+        panName: requiresPan ? panData.panName : undefined,
         shippingName: shipping.name,
         shippingAddress: shipping.address,
         shippingCity: shipping.city,
@@ -90,6 +153,7 @@ export default function CheckoutPage() {
   };
 
   const handleRazorpay = async () => {
+    if (!validateShipping()) return;
     setLoading(true);
     try {
       const res = await paymentsApi.createOrder({
@@ -109,7 +173,7 @@ export default function CheckoutPage() {
         prefill: {
           name: shipping.name,
           contact: shipping.phone,
-          email: customer?.email ?? '',
+          email: shipping.email || customer?.email || '',
         },
         handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           await paymentsApi.verify({
@@ -129,7 +193,10 @@ export default function CheckoutPage() {
             total,
             customerId: customer?.id?.toString(),
             customerName: shipping.name,
+            customerEmail: shipping.email,
             customerPhone: shipping.phone,
+            panNumber: requiresPan ? panData.panNumber : undefined,
+            panName: requiresPan ? panData.panName : undefined,
             shippingName: shipping.name,
             shippingAddress: shipping.address,
             shippingCity: shipping.city,
@@ -154,62 +221,104 @@ export default function CheckoutPage() {
   };
 
   if (step === 'confirm') return (
-    <div className="max-w-lg mx-auto px-4 py-20 text-center">
-      <div className="text-6xl mb-4">✅</div>
-      <h1 className="text-2xl font-bold text-green-600 mb-2">Order Placed!</h1>
-      <p className="text-gray-600 mb-1">Order ID: <strong>{orderId}</strong></p>
-      <p className="text-gray-500 text-sm mb-6">You will receive a confirmation message shortly.</p>
-      <button onClick={() => router.push('/')} className="btn-primary">Continue Shopping</button>
+    <div style={{ maxWidth: '520px', margin: '0 auto', padding: '5rem 1.5rem', textAlign: 'center' }}>
+      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#27ae60', marginBottom: '.5rem' }}>Order Placed!</h1>
+      <p style={{ color: '#555', marginBottom: '.25rem' }}>Order ID: <strong>{orderId}</strong></p>
+      <p style={{ color: '#888', fontSize: '.9rem', marginBottom: '2rem' }}>You will receive a confirmation message shortly.</p>
+      <button onClick={() => router.push('/')} className="button primary">Continue Shopping</button>
     </div>
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      {/* Razorpay Script */}
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
       <script src="https://checkout.razorpay.com/v1/checkout.js" async />
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '1.5rem', color: '#a7354d' }}>Checkout</h1>
 
-      <h1 className="text-2xl font-bold mb-6 text-[#8B1A1A]">Checkout</h1>
-
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Shipping Form */}
-        <div className="flex-1">
-          <div className="card p-6">
-            <h2 className="font-bold text-lg mb-4">Shipping Details</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {([
-                ['name', 'Full Name'],
-                ['phone', 'Phone'],
-                ['address', 'Address'],
-                ['city', 'City / District'],
-                ['pincode', 'Pincode'],
-                ['state', 'State'],
-              ] as [keyof typeof shipping, string][]).map(([field, label]) => (
-                <div key={field} className={field === 'address' ? 'sm:col-span-2' : ''}>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">{label}</label>
-                  <input
-                    value={shipping[field]}
-                    onChange={e => setShipping(s => ({ ...s, [field]: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B1A1A]"
-                  />
-                </div>
-              ))}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2rem', alignItems: 'start' }}>
+        {/* Left: Shipping + Payment */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Shipping Form */}
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1.25rem' }}>Shipping Details</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              {/* Full Name */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Full Name *</label>
+                <input value={shipping.name} onChange={e => setShipping(s => ({ ...s, name: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* Email */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Email</label>
+                <input type="email" value={shipping.email} onChange={e => setShipping(s => ({ ...s, email: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* Phone */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Phone *</label>
+                <input value={shipping.phone} onChange={e => setShipping(s => ({ ...s, phone: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* Pincode */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Pincode *</label>
+                <input value={shipping.pincode} maxLength={6} onChange={e => handlePincodeChange(e.target.value)}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* Address */}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Address *</label>
+                <input value={shipping.address} onChange={e => setShipping(s => ({ ...s, address: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* City */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>City / District *</label>
+                <input value={shipping.city} onChange={e => setShipping(s => ({ ...s, city: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
+              {/* State */}
+              <div>
+                <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>State *</label>
+                <input value={shipping.state} onChange={e => setShipping(s => ({ ...s, state: e.target.value }))}
+                  style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+              </div>
             </div>
           </div>
 
+          {/* PAN section (if required) */}
+          {requiresPan && (
+            <div className="card" style={{ padding: '1.5rem', border: '1.5px solid #f5c6cb', background: '#fff8f9' }}>
+              <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '.5rem', color: '#a7354d' }}>PAN Card Details Required</h2>
+              <p style={{ fontSize: '.85rem', color: '#666', marginBottom: '1rem' }}>
+                As per government regulations, PAN details are mandatory for orders above ₹2,000.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>PAN Number *</label>
+                  <input value={panData.panNumber} onChange={e => setPanData(p => ({ ...p, panNumber: e.target.value.toUpperCase() }))}
+                    placeholder="ABCDE1234F" maxLength={10}
+                    style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box', textTransform: 'uppercase' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.85rem', fontWeight: 600, display: 'block', marginBottom: '.3rem' }}>Name as on PAN *</label>
+                  <input value={panData.panName} onChange={e => setPanData(p => ({ ...p, panName: e.target.value }))}
+                    placeholder="Full Name"
+                    style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.9rem', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Payment */}
-          <div className="card p-6 mt-4">
-            <h2 className="font-bold text-lg mb-4">Payment Method</h2>
-            <div className="space-y-3">
-              <button
-                onClick={handleRazorpay}
-                disabled={loading}
-                className="btn-primary w-full">
-                {loading ? 'Processing...' : '💳 Pay Online (UPI / Card / Net Banking)'}
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '1rem' }}>Payment Method</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+              <button onClick={handleRazorpay} disabled={loading} className="button primary" style={{ width: '100%' }}>
+                {loading ? 'Processing…' : '💳 Pay Online (UPI / Card / Net Banking)'}
               </button>
-              <button
-                onClick={handleCod}
-                disabled={loading}
-                className="btn-secondary w-full">
+              <button onClick={handleCod} disabled={loading} className="button secondary" style={{ width: '100%' }}>
                 🏠 Cash on Delivery (+₹50)
               </button>
             </div>
@@ -217,26 +326,33 @@ export default function CheckoutPage() {
         </div>
 
         {/* Order Summary */}
-        <div className="w-full lg:w-72 shrink-0">
-          <div className="card p-5 sticky top-4">
-            <h2 className="font-bold mb-4">Order Summary</h2>
-            <div className="space-y-2 text-sm max-h-48 overflow-y-auto mb-4">
-              {cart.map(i => (
-                <div key={`${i.dbId}-${i.selectedSize}`} className="flex justify-between">
-                  <span className="truncate mr-2">{i.name} × {i.quantity}</span>
-                  <span className="shrink-0">₹{((i.discountPrice ?? i.price) * i.quantity).toLocaleString('en-IN')}</span>
-                </div>
-              ))}
-            </div>
-            <div className="border-t pt-2 space-y-1 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span></div>
-              <div className="flex justify-between"><span>Shipping</span><span>{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span></div>
-              <div className="flex justify-between font-bold text-base pt-1">
-                <span>Total</span>
-                <span className="text-[#8B1A1A]">₹{total.toLocaleString('en-IN')}</span>
+        <div className="card" style={{ padding: '1.25rem', position: 'sticky', top: '1rem' }}>
+          <h2 style={{ fontWeight: 700, marginBottom: '1rem' }}>Order Summary</h2>
+          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem' }}>
+            {cart.map(i => (
+              <div key={`${i.dbId}-${i.selectedSize}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.85rem', marginBottom: '.5rem' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '.5rem' }}>{i.name} × {i.quantity}{i.selectedSize ? ` (${i.selectedSize})` : ''}</span>
+                <span style={{ flexShrink: 0 }}>₹{((i.discountPrice ?? i.price) * i.quantity).toLocaleString('en-IN')}</span>
               </div>
+            ))}
+          </div>
+          <div style={{ borderTop: '1px solid #eee', paddingTop: '.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.9rem', marginBottom: '.4rem' }}>
+              <span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.9rem', marginBottom: '.4rem' }}>
+              <span>Shipping</span><span style={{ color: shippingCost === 0 ? '#27ae60' : undefined }}>{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.1rem', paddingTop: '.5rem', borderTop: '1px solid #eee' }}>
+              <span>Total</span>
+              <span style={{ color: '#a7354d' }}>₹{total.toLocaleString('en-IN')}</span>
             </div>
           </div>
+          {subtotal < 999 && (
+            <p style={{ fontSize: '.78rem', color: '#888', marginTop: '.75rem', textAlign: 'center' }}>
+              Add ₹{(999 - subtotal).toLocaleString('en-IN')} more for FREE shipping
+            </p>
+          )}
         </div>
       </div>
     </div>

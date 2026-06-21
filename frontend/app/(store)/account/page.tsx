@@ -6,10 +6,22 @@ import { getCustomer, getToken, logout, setCustomer as saveCustomer, setToken } 
 import { customersApi } from '@/lib/api';
 import type { Customer } from '@/types';
 
+const MENU_LINKS = [
+  { href: '/orders', label: '📦 My Orders' },
+  { href: '/account/wishlist', label: '❤️ Wishlist' },
+  { href: '/account/address', label: '📍 Address' },
+  { href: '/account/edit', label: '✏️ Edit Account' },
+  { href: '/account/pan', label: '🪪 PAN Card' },
+  { href: '/account/newsletter', label: '📧 Newsletter' },
+  { href: '/account/saved-cards', label: '💳 Saved Cards' },
+  { href: '/account/downloads', label: '📥 Downloads' },
+  { href: '/reviews', label: '⭐ Reviews' },
+  { href: '/tracking', label: '🚚 Track Order' },
+];
+
 export default function AccountPage() {
   const router = useRouter();
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [tab, setTab] = useState<'profile' | 'orders'>('profile');
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +44,6 @@ export default function AccountPage() {
     } finally { setLoading(false); }
   };
 
-  // Logged in view
   if (customer) return (
     <>
       <section className="page-hero">
@@ -43,34 +54,52 @@ export default function AccountPage() {
 
       <main className="account-shell">
         <nav className="account-menu">
-          <Link className={tab === 'profile' ? 'active' : ''} href="#" onClick={e => { e.preventDefault(); setTab('profile'); }}>Account Dashboard</Link>
-          <Link className={tab === 'orders' ? 'active' : ''} href="#" onClick={e => { e.preventDefault(); setTab('orders'); }}>My Orders</Link>
-          <Link href="/account/wishlist">Wishlist</Link>
-          <Link href="/tracking">Track Order</Link>
+          <Link className="active" href="/account">Dashboard</Link>
+          {MENU_LINKS.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}
           <Link href="#" onClick={e => { e.preventDefault(); logout(); setCustomer(null); window.dispatchEvent(new Event('auth-changed')); }}
-            style={{ color: '#c0392b' }}>Logout</Link>
+            style={{ color: '#e67e22' }}>🔓 Logout</Link>
+          <Link href="/account/deactivate" style={{ color: '#c0392b', fontSize: '.85rem' }}>Deactivate</Link>
+          <Link href="/account/delete" style={{ color: '#c0392b', fontSize: '.85rem' }}>Delete Account</Link>
         </nav>
 
         <section>
-          {tab === 'profile' && (
-            <div className="form-card">
-              <h2>Account Details</h2>
-              <div className="form-grid" style={{ pointerEvents: 'none' }}>
-                <label>Name<input value={`${customer.firstName} ${customer.lastName}`} readOnly /></label>
-                <label>Customer ID<input value={customer.customerCode || '—'} readOnly /></label>
-                <label>Email<input value={customer.email} readOnly /></label>
-                <label>Phone<input value={customer.phone} readOnly /></label>
-                <label className="full-field">Address
-                  <input value={[customer.addrLine1, customer.addrLine2, customer.postOffice, customer.district, customer.state, customer.pincode].filter(Boolean).join(', ')} readOnly />
-                </label>
-                <label>Account Status
-                  <input value={customer.accountStatus || 'Active'} readOnly />
-                </label>
+          <div className="form-card">
+            <h2>Account Dashboard</h2>
+            <div className="form-grid" style={{ pointerEvents: 'none' }}>
+              <label>Name<input value={`${customer.firstName} ${customer.lastName}`} readOnly /></label>
+              <label>Customer ID<input value={customer.customerCode || '—'} readOnly /></label>
+              <label>Email<input value={customer.email} readOnly /></label>
+              <label>Phone<input value={customer.phone} readOnly /></label>
+              <label className="full-field">Address
+                <input value={[customer.addrLine1, customer.addrLine2, customer.postOffice, customer.district, customer.state, customer.pincode].filter(Boolean).join(', ')} readOnly />
+              </label>
+              <label>Account Status
+                <input value={customer.accountStatus || 'Active'} readOnly />
+              </label>
+            </div>
+
+            {/* Quick Links Grid */}
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1.25rem' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '.95rem', marginBottom: '1rem', color: '#555' }}>Quick Links</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '.6rem' }}>
+                {MENU_LINKS.map(l => (
+                  <Link key={l.href} href={l.href} style={{
+                    display: 'block', padding: '.75rem', background: '#fdf0f3', borderRadius: '8px',
+                    textDecoration: 'none', color: '#a7354d', fontSize: '.85rem', fontWeight: 600,
+                    textAlign: 'center', transition: 'background .15s',
+                  }}>
+                    {l.label}
+                  </Link>
+                ))}
+                <Link href="/account/deactivate" style={{ display: 'block', padding: '.75rem', background: '#fff8e1', borderRadius: '8px', textDecoration: 'none', color: '#e67e22', fontSize: '.85rem', fontWeight: 600, textAlign: 'center' }}>
+                  ⏸️ Deactivate
+                </Link>
+                <Link href="/account/delete" style={{ display: 'block', padding: '.75rem', background: '#fdecea', borderRadius: '8px', textDecoration: 'none', color: '#c0392b', fontSize: '.85rem', fontWeight: 600, textAlign: 'center' }}>
+                  🗑️ Delete Account
+                </Link>
               </div>
             </div>
-          )}
-
-          {tab === 'orders' && <OrdersList customer={customer} />}
+          </div>
         </section>
       </main>
     </>
@@ -132,66 +161,5 @@ export default function AccountPage() {
         </section>
       </main>
     </>
-  );
-}
-
-function OrdersList({ customer }: { customer: Customer }) {
-  const [orders, setOrders] = useState<import('@/types').Order[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = getToken();
-    import('@/lib/api').then(({ ordersApi }) =>
-      ordersApi.getAll({ phone: customer.phone, email: customer.email }, token ?? '')
-        .then(r => setOrders(r.orders))
-        .catch(() => setOrders([]))
-        .finally(() => setLoading(false))
-    );
-  }, [customer]);
-
-  if (loading) return <div className="form-card"><p style={{ textAlign: 'center', color: '#999', padding: '2rem 0' }}>Loading orders…</p></div>;
-  if (orders.length === 0) return (
-    <div className="form-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
-      <h3 style={{ color: '#555' }}>No orders yet</h3>
-      <p style={{ color: '#888', marginBottom: '1.5rem' }}>Your order history will appear here.</p>
-      <Link href="/products" className="button primary">Start Shopping</Link>
-    </div>
-  );
-
-  return (
-    <div className="form-card">
-      <h2>Order History</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Date</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>AWB</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map(o => (
-              <tr key={o.id}>
-                <td><strong>#{o.id}</strong></td>
-                <td>{new Date(o.placedAt ?? o.createdAt).toLocaleDateString('en-IN')}</td>
-                <td>{o.cart.length} item(s)</td>
-                <td><strong>₹{o.total.toLocaleString('en-IN')}</strong></td>
-                <td>
-                  <span className={`badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Cancelled' ? 'badge-red' : 'badge-yellow'}`}>
-                    {o.status}
-                  </span>
-                </td>
-                <td>{o.awb || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
