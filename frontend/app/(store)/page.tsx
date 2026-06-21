@@ -30,10 +30,6 @@ export default async function HomePage() {
           <p style={{ color: '#f0e6ea', fontSize: 'clamp(.8rem, 1.5vw, 1rem)', marginBottom: '1.25rem', maxWidth: '42%' }}>
             Designer sarees, daily nightwear, petticoats, and fabric essentials — boutique feel, honest support, fast WhatsApp ordering.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <Link className="button primary" href="/saree">Shop Sarees</Link>
-            <Link href="/return-exchange" style={{ color: '#fff', border: '1.5px solid #fff', padding: '.55rem 1.4rem', borderRadius: '8px', fontWeight: 600, fontSize: '.95rem', textDecoration: 'none' }}>Return Policy</Link>
-          </div>
         </div>
       </section>
 
