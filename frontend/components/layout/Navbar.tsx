@@ -4,23 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCart, cartCount } from '@/lib/cart';
 import { getCustomer } from '@/lib/auth';
-import Image from 'next/image';
-
-const categories = [
-  { label: 'Sarees', href: '/products?category=saree' },
-  { label: 'Nighty', href: '/products?category=nighty' },
-  { label: 'Petticoat', href: '/products?category=petticoat' },
-  { label: 'Women', href: '/products?category=women' },
-  { label: 'Men', href: '/products?category=men' },
-  { label: 'Best Sellers', href: '/products?bestSeller=true' },
-];
 
 export default function Navbar() {
   const router = useRouter();
   const [count, setCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -37,84 +27,100 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-40">
-      {/* Top bar */}
-      <div className="bg-[#8B1A1A] text-white text-xs text-center py-1 px-4">
-        Free shipping on orders above ₹999 | COD Available
+    <>
+      {/* Topbar */}
+      <div className="topbar">
+        <p>Welcome to Mahalaxmi Fashion Hub!</p>
+        <p>Order / Return / Exchange / Customization / Bulk Orders:{' '}
+          <a href="https://wa.me/919429429880" target="_blank" rel="noopener noreferrer">WhatsApp +91 9429429880</a>
+        </p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-        {/* Logo */}
-        <Link href="/" className="shrink-0">
-          <div className="font-bold text-xl text-[#8B1A1A]">
-            Mahalaxmi<span className="text-[#D4AF37]">Fashion</span>
-          </div>
-          <div className="text-xs text-gray-400 -mt-0.5">Fashion Hub</div>
-        </Link>
+      {/* Offer Strip */}
+      <section className="premium-offer-strip">
+        <span>Wedding Edit Live</span>
+        <strong>Fresh sarees, nightwear, fabrics and daily essentials</strong>
+        <Link href="/products?bestSeller=true">Shop Now</Link>
+      </section>
 
-        {/* Search */}
-        <form
-          onSubmit={e => { e.preventDefault(); router.push(`/products?q=${search}`); }}
-          className="flex-1 hidden sm:flex">
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search sarees, nighty, petticoat..."
-            className="flex-1 border rounded-l-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B1A1A]"
-          />
-          <button type="submit"
-            className="bg-[#8B1A1A] text-white px-4 py-2 rounded-r-lg text-sm hover:bg-[#6e1414]">🔍</button>
-        </form>
+      {/* Header */}
+      <header className="site-header">
+        <nav className="policy-nav">
+          <Link href="/cancellation-policy">Cancellation Policy</Link>
+          <Link href="/return-policy">Return Policy</Link>
+          <Link href="/return-exchange">Refund &amp; Exchange Policy</Link>
+          <Link href="/privacy-policy">Privacy Policy</Link>
+          <Link href="/tracking">Track Order</Link>
+        </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3 ml-auto sm:ml-0">
-          <Link href="/account" className="text-gray-600 hover:text-[#8B1A1A] text-sm hidden sm:flex items-center gap-1">
-            👤 {isLoggedIn ? 'Account' : 'Login'}
-          </Link>
-          <Link href="/cart" className="relative text-gray-600 hover:text-[#8B1A1A]">
-            🛒
-            {count > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#8B1A1A] text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                {count > 9 ? '9+' : count}
+        <div className="brand-row">
+          {/* Mobile menu */}
+          <details className="site-menu" style={{ display: 'none' }} onToggle={e => setMenuOpen((e.target as HTMLDetailsElement).open)}>
+            <summary aria-label="Open customer menu">
+              <span className="site-menu-lines">
+                <span /><span /><span />
               </span>
-            )}
+            </summary>
+            <div className="site-menu-panel">
+              <Link className="account-cta menu-account-cta" href="/account">Login / Signup</Link>
+              <Link href="/account">My Account</Link>
+              <Link href="/account?tab=orders">My Orders</Link>
+              <Link href="/wishlist">Wishlist</Link>
+              <Link href="/tracking">Track Order</Link>
+            </div>
+          </details>
+
+          <Link href="/" className="brand" aria-label="Mahalaxmi Fashion Hub home">
+            <span className="brand-mark">
+              <img src="/logo.webp" alt="Mahalaxmi Fashion Hub logo" width="48" height="48"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </span>
+            <span>
+              <strong>Mahalaxmi Fashion Hub</strong>
+              <span className="brand-tagline">Every Look, A New Experience</span>
+            </span>
           </Link>
-          <button onClick={() => setMenuOpen(m => !m)} className="sm:hidden text-gray-600 text-xl">☰</button>
-        </div>
-      </div>
 
-      {/* Category Nav */}
-      <nav className="hidden sm:block border-t">
-        <div className="max-w-7xl mx-auto px-4 flex gap-6 py-2">
-          {categories.map(c => (
-            <Link key={c.href} href={c.href}
-              className="text-sm text-gray-600 hover:text-[#8B1A1A] whitespace-nowrap">
-              {c.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-
-      {/* Mobile Menu */}
-      {menuOpen && (
-        <div className="sm:hidden border-t bg-white">
-          <div className="px-4 py-2">
+          <form className="search" role="search"
+            onSubmit={e => { e.preventDefault(); if (search.trim()) router.push(`/products?q=${encodeURIComponent(search)}`); }}>
             <input
+              id="searchInput"
+              name="q"
+              type="search"
+              placeholder="Search saree, nighty, petticoat..."
+              aria-label="Search products"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { router.push(`/products?q=${search}`); setMenuOpen(false); }}}
-              placeholder="Search..."
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
             />
-          </div>
-          {[...categories, { label: isLoggedIn ? '👤 Account' : '👤 Login', href: '/account' }].map(c => (
-            <Link key={c.href} href={c.href} onClick={() => setMenuOpen(false)}
-              className="block px-4 py-2.5 text-sm border-b text-gray-700 hover:bg-gray-50">
-              {c.label}
+            <button type="submit">Search</button>
+          </form>
+
+          <div className="brand-actions">
+            <Link className="cart-link" href="/cart">Cart <span>{count > 0 ? count : 0}</span></Link>
+            <Link className="account-cta" href="/account">
+              {isLoggedIn ? 'My Account' : 'Login / Signup'}
             </Link>
-          ))}
+          </div>
         </div>
-      )}
-    </header>
+
+        {/* Department Nav */}
+        <nav className="department-nav" aria-label="Shop by department">
+          <Link href="/products?category=saree">Saree</Link>
+          <Link href="/products?category=women">Women</Link>
+          <Link href="/products?category=men">Men</Link>
+          <Link href="/products?bestSeller=true">Best Sellers</Link>
+          <Link href="/products?category=nighty">Nighty</Link>
+          <Link href="/products?category=petticoat">Petticoat</Link>
+          <Link href="/products?category=popline">Popline</Link>
+          <Link href="/products?category=nighty-cloth">Nighty Cloth</Link>
+        </nav>
+      </header>
+
+      {/* WhatsApp Float */}
+      <a className="whatsapp-float" href="https://wa.me/919429429880"
+        aria-label="Chat on WhatsApp" target="_blank" rel="noopener noreferrer">
+        💬 WhatsApp
+      </a>
+    </>
   );
 }

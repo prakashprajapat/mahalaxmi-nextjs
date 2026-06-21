@@ -2,67 +2,59 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="bg-[#1a1a1a] text-gray-300 mt-16">
-      <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
-        <div className="col-span-2 sm:col-span-1">
-          <h3 className="text-white font-bold text-lg mb-3">Mahalaxmi Fashion Hub</h3>
-          <p className="text-sm text-gray-400 leading-relaxed">
-            Premium Indian fashion — Sarees, Nighty, Petticoat & more. Quality you can trust.
-          </p>
+    <footer className="site-footer">
+      <div className="site-footer-grid">
+        <div className="site-footer-brand">
+          <Link className="brand footer-brand" href="/">
+            <span className="brand-mark">
+              <img src="/logo.webp" alt="Mahalaxmi Fashion Hub logo" width="48" height="48"
+                style={{ borderRadius: '8px' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </span>
+            <span>
+              <strong>Mahalaxmi Fashion Hub</strong>
+              <span className="brand-tagline">Every Look, A New Experience</span>
+            </span>
+          </Link>
+          <p>Designer sarees, daily nightwear, petticoats and fabric essentials — curated with a boutique touch.</p>
+          <p className="site-footer-contact">Ward No. 45, Near Mahadev Temple, Balotra, Rajasthan 344022</p>
         </div>
 
-        <div>
-          <h4 className="text-white font-semibold mb-3 text-sm">Shop</h4>
-          <ul className="space-y-2 text-sm">
-            {[
-              ['Sarees', '/products?category=saree'],
-              ['Nighty', '/products?category=nighty'],
-              ['Petticoat', '/products?category=petticoat'],
-              ['Best Sellers', '/products?bestSeller=true'],
-              ['New Arrivals', '/products'],
-            ].map(([label, href]) => (
-              <li key={href}><Link href={href} className="hover:text-white">{label}</Link></li>
-            ))}
-          </ul>
-        </div>
+        <nav className="site-footer-col">
+          <h2>Shop</h2>
+          <Link href="/products?category=saree">Saree</Link>
+          <Link href="/products?category=nighty">Nighty</Link>
+          <Link href="/products?category=petticoat">Petticoat</Link>
+          <Link href="/products?bestSeller=true">Best Sellers</Link>
+          <Link href="/products?category=popline">Popline</Link>
+        </nav>
 
-        <div>
-          <h4 className="text-white font-semibold mb-3 text-sm">Help</h4>
-          <ul className="space-y-2 text-sm">
-            {[
-              ['Contact Us', '/contact'],
-              ['About Us', '/about-us'],
-              ['Track Order', '/orders'],
-              ['Return Policy', '/return-policy'],
-              ['Privacy Policy', '/privacy-policy'],
-            ].map(([label, href]) => (
-              <li key={href}><Link href={href} className="hover:text-white">{label}</Link></li>
-            ))}
-          </ul>
-        </div>
+        <nav className="site-footer-col">
+          <h2>Help</h2>
+          <Link href="/tracking">Track Order</Link>
+          <Link href="/return-exchange">Returns &amp; Exchange</Link>
+          <Link href="/cancellation-policy">Cancellation Policy</Link>
+          <Link href="/return-policy">Return Policy</Link>
+          <Link href="/account">My Account</Link>
+        </nav>
 
-        <div>
-          <h4 className="text-white font-semibold mb-3 text-sm">Contact</h4>
-          <ul className="space-y-2 text-sm text-gray-400">
-            <li>📧 contact@mahalaxmifashionhub.com</li>
-            <li>📞 WhatsApp Support</li>
-            <li className="flex gap-3 mt-3">
-              <a href="#" className="hover:text-white">📱 Instagram</a>
-              <a href="#" className="hover:text-white">📘 Facebook</a>
-            </li>
-          </ul>
-        </div>
+        <nav className="site-footer-col">
+          <h2>Connect</h2>
+          <a href="https://wa.me/919429429880" target="_blank" rel="noopener noreferrer">WhatsApp +91 9429429880</a>
+          <a href="https://www.instagram.com/mahalaxmifashionhub.blt/" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://www.facebook.com/mahalaxmifashionhub.blt/" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a href="mailto:contact@mahalaxmifashionhub.com">contact@mahalaxmifashionhub.com</a>
+        </nav>
       </div>
 
-      <div className="border-t border-gray-800 py-4 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} Mahalaxmi Fashion Hub. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/terms-conditions" className="hover:text-gray-300">Terms</Link>
-            <Link href="/privacy-policy" className="hover:text-gray-300">Privacy</Link>
-            <Link href="/cancellation-policy" className="hover:text-gray-300">Cancellation</Link>
-          </div>
-        </div>
+      <div className="site-footer-baseline">
+        <small>&copy; {new Date().getFullYear()} Mahalaxmi Fashion Hub. All rights reserved.</small>
+        <nav className="site-footer-legal">
+          <Link href="/privacy-policy">Privacy</Link>
+          <Link href="/return-policy">Returns</Link>
+          <Link href="/cancellation-policy">Cancellation</Link>
+          <Link href="/terms-conditions">Terms</Link>
+        </nav>
       </div>
     </footer>
   );

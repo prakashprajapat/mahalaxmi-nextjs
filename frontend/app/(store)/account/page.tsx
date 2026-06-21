@@ -1,170 +1,137 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getCustomer, getToken, logout, setCustomer as saveCustomer, setToken } from '@/lib/auth';
 import { customersApi } from '@/lib/api';
 import type { Customer } from '@/types';
 
-type Tab = 'profile' | 'orders' | 'login';
-
 export default function AccountPage() {
   const router = useRouter();
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [tab, setTab] = useState<Tab>('login');
-  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
-  const [form, setForm] = useState({ email: '', password: '', phone: '', otp: '' });
-  const [otpSent, setOtpSent] = useState(false);
+  const [tab, setTab] = useState<'profile' | 'orders'>('profile');
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const c = getCustomer();
-    if (c) { setCustomer(c); setTab('profile'); }
+    if (c) setCustomer(c);
   }, []);
 
-  const handlePasswordLogin = async () => {
+  const handleLogin = async () => {
     setLoading(true); setError('');
     try {
       const res = await customersApi.login({ email: form.email, password: form.password });
       setToken(res.token);
       saveCustomer(res.customer);
       setCustomer(res.customer);
-      setTab('profile');
+      window.dispatchEvent(new Event('auth-changed'));
     } catch (e) {
-      setError((e as Error).message);
+      setError((e as Error).message || 'Login failed. Please check your credentials.');
     } finally { setLoading(false); }
   };
 
-  const handleSendOtp = async () => {
-    setLoading(true); setError('');
-    try {
-      await customersApi.sendOtp(form.phone);
-      setOtpSent(true);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally { setLoading(false); }
-  };
-
-  const handleVerifyOtp = async () => {
-    setLoading(true); setError('');
-    try {
-      const res = await customersApi.verifyOtp(form.phone, form.otp);
-      if (res.newUser) { router.push('/account/register'); return; }
-      if (res.token && res.customer) {
-        setToken(res.token);
-        saveCustomer(res.customer);
-        setCustomer(res.customer);
-        setTab('profile');
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally { setLoading(false); }
-  };
-
+  // Logged in view
   if (customer) return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#8B1A1A]">My Account</h1>
-          <p className="text-gray-500">{customer.firstName} {customer.lastName}</p>
-        </div>
-        <button onClick={() => { logout(); setCustomer(null); setTab('login'); }} className="text-sm text-red-500 hover:underline">
-          Logout
-        </button>
-      </div>
+    <>
+      <section className="page-hero">
+        <p className="eyebrow">Customer Account</p>
+        <h1>My Account</h1>
+        <p>Welcome back, {customer.firstName}!</p>
+      </section>
 
-      {/* Tabs */}
-      <div className="flex gap-4 border-b mb-6">
-        {(['profile', 'orders'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`pb-2 text-sm font-medium capitalize border-b-2 transition-colors ${
-              tab === t ? 'border-[#8B1A1A] text-[#8B1A1A]' : 'border-transparent text-gray-500'}`}>
-            {t}
-          </button>
-        ))}
-      </div>
+      <main className="account-shell">
+        <nav className="account-menu">
+          <Link className={tab === 'profile' ? 'active' : ''} href="#" onClick={e => { e.preventDefault(); setTab('profile'); }}>Account Dashboard</Link>
+          <Link className={tab === 'orders' ? 'active' : ''} href="#" onClick={e => { e.preventDefault(); setTab('orders'); }}>My Orders</Link>
+          <Link href="/account/wishlist">Wishlist</Link>
+          <Link href="/tracking">Track Order</Link>
+          <Link href="#" onClick={e => { e.preventDefault(); logout(); setCustomer(null); window.dispatchEvent(new Event('auth-changed')); }}
+            style={{ color: '#c0392b' }}>Logout</Link>
+        </nav>
 
-      {tab === 'profile' && (
-        <div className="card p-6 grid sm:grid-cols-2 gap-4 text-sm">
-          <Info label="Name" value={`${customer.firstName} ${customer.lastName}`} />
-          <Info label="Email" value={customer.email} />
-          <Info label="Phone" value={customer.phone} />
-          <Info label="Customer Code" value={customer.customerCode} />
-          <Info label="Address" value={`${customer.addrLine1}, ${customer.district}, ${customer.state} - ${customer.pincode}`} />
-          <Info label="Account Status" value={customer.accountStatus} />
-        </div>
-      )}
-
-      {tab === 'orders' && <OrdersList customer={customer} />}
-    </div>
-  );
-
-  return (
-    <div className="max-w-sm mx-auto px-4 py-20">
-      <h1 className="text-2xl font-bold mb-6 text-center text-[#8B1A1A]">Login</h1>
-
-      <div className="flex gap-2 mb-6">
-        {(['password', 'otp'] as const).map(m => (
-          <button key={m} onClick={() => setLoginMode(m)}
-            className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${
-              loginMode === m ? 'bg-[#8B1A1A] text-white border-[#8B1A1A]' : 'border-gray-300'}`}>
-            {m === 'password' ? 'Email / Password' : 'OTP (WhatsApp)'}
-          </button>
-        ))}
-      </div>
-
-      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-
-      {loginMode === 'password' ? (
-        <div className="space-y-3">
-          <input placeholder="Email" type="email" value={form.email}
-            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <input placeholder="Password" type="password" value={form.password}
-            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <button onClick={handlePasswordLogin} disabled={loading} className="btn-primary w-full">
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <input placeholder="WhatsApp Number" type="tel" value={form.phone}
-            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          {!otpSent ? (
-            <button onClick={handleSendOtp} disabled={loading} className="btn-primary w-full">
-              {loading ? 'Sending...' : 'Send OTP'}
-            </button>
-          ) : (
-            <>
-              <input placeholder="Enter OTP" value={form.otp}
-                onChange={e => setForm(f => ({ ...f, otp: e.target.value }))}
-                className="w-full border rounded-lg px-3 py-2 text-sm" />
-              <button onClick={handleVerifyOtp} disabled={loading} className="btn-primary w-full">
-                {loading ? 'Verifying...' : 'Verify OTP'}
-              </button>
-            </>
+        <section>
+          {tab === 'profile' && (
+            <div className="form-card">
+              <h2>Account Details</h2>
+              <div className="form-grid" style={{ pointerEvents: 'none' }}>
+                <label>Name<input value={`${customer.firstName} ${customer.lastName}`} readOnly /></label>
+                <label>Customer ID<input value={customer.customerCode || '—'} readOnly /></label>
+                <label>Email<input value={customer.email} readOnly /></label>
+                <label>Phone<input value={customer.phone} readOnly /></label>
+                <label className="full-field">Address
+                  <input value={[customer.addrLine1, customer.addrLine2, customer.postOffice, customer.district, customer.state, customer.pincode].filter(Boolean).join(', ')} readOnly />
+                </label>
+                <label>Account Status
+                  <input value={customer.accountStatus || 'Active'} readOnly />
+                </label>
+              </div>
+            </div>
           )}
-        </div>
-      )}
 
-      <p className="text-center text-sm text-gray-500 mt-4">
-        New here?{' '}
-        <a href="/account/register" className="text-[#8B1A1A] hover:underline">Create Account</a>
-      </p>
-    </div>
+          {tab === 'orders' && <OrdersList customer={customer} />}
+        </section>
+      </main>
+    </>
   );
-}
 
-function Info({ label, value }: { label: string; value: string }) {
+  // Login view
   return (
-    <div>
-      <p className="text-gray-400 text-xs uppercase tracking-wide">{label}</p>
-      <p className="font-medium text-gray-800">{value || '—'}</p>
-    </div>
+    <>
+      <section className="page-hero">
+        <p className="eyebrow">Customer Account</p>
+        <h1>Customer Login / Registration</h1>
+        <p>Login to your existing account or create a new one.</p>
+      </section>
+
+      <main className="account-shell">
+        <nav className="account-menu">
+          <Link className="active" href="/account">Login / Signup</Link>
+          <Link href="/account/register">New Registration</Link>
+          <Link href="/tracking">Track Order</Link>
+        </nav>
+
+        <section className="auth-stack">
+          <div className="form-card">
+            <h2>Customer Login</h2>
+            <form className="form-grid" onSubmit={e => { e.preventDefault(); handleLogin(); }}>
+              <label className="full-field">
+                Email Address
+                <input required type="email" placeholder="you@example.com" autoComplete="email"
+                  value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              </label>
+              <label className="full-field">
+                Password
+                <input required type="password" placeholder="Enter password" autoComplete="current-password"
+                  value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+              </label>
+
+              {error && <p className="wiz-message full-field">{error}</p>}
+
+              <div className="form-actions">
+                <button type="submit" className="button primary" disabled={loading}>
+                  {loading ? 'Logging in…' : 'Login'}
+                </button>
+                <Link href="/account/register" className="button secondary">Create Account</Link>
+              </div>
+              <p className="full-field" style={{ marginTop: '10px', textAlign: 'right', fontSize: '.88rem' }}>
+                <Link className="inline-link" href="/forgot-password">Forgot Password?</Link>
+              </p>
+            </form>
+          </div>
+
+          <div className="form-card" style={{ background: '#fdf0f3' }}>
+            <h2>Quick Safety Tips</h2>
+            <ul className="safety-list">
+              <li>Do not share your password, OTP, UPI PIN, or full card details in support chat.</li>
+              <li>If there is an order issue, keep the parcel-opening video and order ID ready.</li>
+              <li>Contact us only via official WhatsApp: <a className="inline-link" href="https://wa.me/919429429880">+91 9429429880</a></li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </>
   );
 }
 
@@ -174,7 +141,6 @@ function OrdersList({ customer }: { customer: Customer }) {
 
   useEffect(() => {
     const token = getToken();
-    customersApi.getAll(token ?? '').catch(() => null);
     import('@/lib/api').then(({ ordersApi }) =>
       ordersApi.getAll({ phone: customer.phone, email: customer.email }, token ?? '')
         .then(r => setOrders(r.orders))
@@ -183,31 +149,49 @@ function OrdersList({ customer }: { customer: Customer }) {
     );
   }, [customer]);
 
-  if (loading) return <p className="text-gray-400 text-center py-8">Loading orders...</p>;
-  if (orders.length === 0) return <p className="text-gray-400 text-center py-8">No orders yet.</p>;
+  if (loading) return <div className="form-card"><p style={{ textAlign: 'center', color: '#999', padding: '2rem 0' }}>Loading orders…</p></div>;
+  if (orders.length === 0) return (
+    <div className="form-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+      <h3 style={{ color: '#555' }}>No orders yet</h3>
+      <p style={{ color: '#888', marginBottom: '1.5rem' }}>Your order history will appear here.</p>
+      <Link href="/products" className="button primary">Start Shopping</Link>
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      {orders.map(o => (
-        <div key={o.id} className="card p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="font-semibold text-sm">#{o.id}</p>
-              <p className="text-gray-500 text-xs">{new Date(o.placedAt ?? o.createdAt).toLocaleDateString('en-IN')}</p>
-            </div>
-            <span className={`badge text-xs ${
-              o.status === 'Delivered' ? 'bg-green-100 text-green-700' :
-              o.status === 'Cancelled' ? 'bg-red-100 text-red-600' :
-              'bg-yellow-100 text-yellow-700'}`}>
-              {o.status}
-            </span>
-          </div>
-          <div className="mt-2 text-sm text-gray-600">
-            {o.cart.length} item(s) · <strong>₹{o.total.toLocaleString('en-IN')}</strong>
-          </div>
-          {o.awb && <p className="text-xs text-blue-600 mt-1">AWB: {o.awb}</p>}
-        </div>
-      ))}
+    <div className="form-card">
+      <h2>Order History</h2>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>AWB</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map(o => (
+              <tr key={o.id}>
+                <td><strong>#{o.id}</strong></td>
+                <td>{new Date(o.placedAt ?? o.createdAt).toLocaleDateString('en-IN')}</td>
+                <td>{o.cart.length} item(s)</td>
+                <td><strong>₹{o.total.toLocaleString('en-IN')}</strong></td>
+                <td>
+                  <span className={`badge ${o.status === 'Delivered' ? 'badge-green' : o.status === 'Cancelled' ? 'badge-red' : 'badge-yellow'}`}>
+                    {o.status}
+                  </span>
+                </td>
+                <td>{o.awb || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

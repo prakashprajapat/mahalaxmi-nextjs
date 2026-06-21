@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import type { Product } from '@/types';
 import { addToCart } from '@/lib/cart';
@@ -14,46 +13,62 @@ export default function ProductCard({ product }: { product: Product }) {
     e.preventDefault();
     addToCart(product);
     setAdded(true);
+    window.dispatchEvent(new Event('cart-updated'));
     setTimeout(() => setAdded(false), 1500);
   };
 
   return (
-    <Link href={`/products/${product.dbId}`} className="card group block hover:shadow-md transition-shadow">
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
+    <Link href={`/products/${product.dbId}`} className="product-card" style={{ display: 'block', textDecoration: 'none' }}>
+      <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5' }}>
         {product.image ? (
-          <Image src={product.image} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img src={product.image} alt={product.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .3s' }}
+            onMouseEnter={e => { (e.target as HTMLImageElement).style.transform = 'scale(1.05)'; }}
+            onMouseLeave={e => { (e.target as HTMLImageElement).style.transform = 'scale(1)'; }}
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl text-gray-200">👗</div>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', color: '#ddd' }}>
+            👗
+          </div>
         )}
 
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
+        <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {product.bestSeller && (
-            <span className="badge bg-[#D4AF37] text-white text-xs">Best Seller</span>
+            <span className="badge badge-yellow">Best Seller</span>
           )}
           {saving > 0 && (
-            <span className="badge bg-red-500 text-white text-xs">{saving}% off</span>
+            <span className="badge badge-red">{saving}% off</span>
           )}
         </div>
 
         {/* Quick Add */}
-        <button
-          onClick={handleAdd}
-          className="absolute bottom-2 left-2 right-2 bg-[#8B1A1A] text-white text-xs py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-          {added ? '✓ Added!' : '+ Add to Cart'}
+        <button onClick={handleAdd} className="quick-add-btn"
+          style={{
+            position: 'absolute', bottom: '8px', left: '8px', right: '8px',
+            background: '#a7354d', color: '#fff', border: 'none', borderRadius: '6px',
+            padding: '.5rem', fontSize: '.82rem', fontWeight: 600, cursor: 'pointer',
+            opacity: 0, transition: 'opacity .2s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0'; }}
+        >
+          {added ? '✓ Added to Cart!' : '+ Add to Cart'}
         </button>
       </div>
 
-      <div className="p-3">
-        <p className="text-xs text-gray-400 uppercase tracking-wide">{product.category}</p>
-        <p className="text-sm font-medium text-gray-800 truncate mt-0.5">{product.name}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="font-bold text-[#8B1A1A]">₹{price.toLocaleString('en-IN')}</span>
-          {saving > 0 && (
-            <span className="text-xs text-gray-400 line-through">₹{product.price.toLocaleString('en-IN')}</span>
-          )}
+      <div className="product-card-body">
+        <p style={{ fontSize: '.72rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '.2rem' }}>
+          {product.category}
+        </p>
+        <h3 style={{ margin: '0 0 .4rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {product.name}
+        </h3>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '.4rem' }}>
+          <span className="price">₹{price.toLocaleString('en-IN')}</span>
+          {saving > 0 && <span className="price-orig">₹{product.price.toLocaleString('en-IN')}</span>}
         </div>
-        <p className={`text-xs mt-1 ${product.stock === 'In Stock' ? 'text-green-500' : 'text-red-400'}`}>
+        <p style={{ fontSize: '.78rem', marginTop: '.3rem', color: product.stock === 'In Stock' ? '#27ae60' : '#e74c3c' }}>
           {product.stock}
         </p>
       </div>

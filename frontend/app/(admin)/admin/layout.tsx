@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { getAdminToken, adminLogout } from '@/lib/auth';
 
 const navItems = [
-  { href: '/admin', label: '📊 Dashboard' },
+  { href: '/admin', label: '📊 Dashboard', exact: true },
   { href: '/admin/products', label: '👗 Products' },
   { href: '/admin/orders', label: '📦 Orders' },
   { href: '/admin/customers', label: '👥 Customers' },
@@ -22,40 +22,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     else setAuthed(true);
   }, [router]);
 
-  if (!authed) return null;
+  if (!authed) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+      <p style={{ color: '#999' }}>Checking authentication…</p>
+    </div>
+  );
+
+  const isActive = (item: typeof navItems[0]) =>
+    item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       {/* Sidebar */}
-      <aside className="w-56 bg-[#8B1A1A] text-white flex flex-col">
-        <div className="p-4 border-b border-white/20">
-          <p className="font-bold text-sm">Mahalaxmi Fashion Hub</p>
-          <p className="text-xs text-white/60">Admin Panel</p>
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-brand">
+          <strong>Mahalaxmi Fashion Hub</strong>
+          <span>Admin Panel</span>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="admin-nav">
           {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-                pathname === item.href
-                  ? 'bg-white/20 font-medium'
-                  : 'hover:bg-white/10'}`}>
+            <Link key={item.href} href={item.href}
+              className={isActive(item) ? 'active' : ''}>
               {item.label}
             </Link>
           ))}
         </nav>
-        <div className="p-3">
+        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,.1)' }}>
+          <Link href="/" style={{ color: '#aaa', fontSize: '.85rem', display: 'block', marginBottom: '.5rem' }}>
+            🌐 View Website
+          </Link>
           <button
             onClick={() => { adminLogout(); router.push('/admin/login'); }}
-            className="w-full text-left text-sm text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10">
+            style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '.85rem', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
             🚪 Logout
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      {/* Top bar */}
+      <div className="admin-topbar">
+        <h1>
+          {navItems.find(n => isActive(n))?.label?.replace(/^[^\s]+\s/, '') || 'Admin Panel'}
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '.85rem', color: '#666' }}>
+          <span>admin@mahalaxmifashionhub.com</span>
+          <button onClick={() => { adminLogout(); router.push('/admin/login'); }}
+            style={{ background: 'none', border: 'none', color: '#a7354d', cursor: 'pointer', fontWeight: 600, fontSize: '.85rem' }}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="admin-content">
+        {children}
+      </div>
     </div>
   );
 }

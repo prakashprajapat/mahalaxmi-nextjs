@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { authApi } from '@/lib/api';
 import { setAdminToken } from '@/lib/auth';
 
@@ -18,46 +19,59 @@ export default function AdminLoginPage() {
       setAdminToken(res.token);
       router.push('/admin');
     } catch (e) {
-      setError((e as Error).message);
+      setError((e as Error).message || 'Login failed. Please check your credentials.');
     } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#8B1A1A]">
-      <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-2">👑</div>
-          <h1 className="text-xl font-bold text-gray-800">Admin Login</h1>
-          <p className="text-sm text-gray-400">Mahalaxmi Fashion Hub</p>
-        </div>
+    <>
+      <section className="page-hero">
+        <p className="eyebrow">Private Access</p>
+        <h1>Admin / Staff Login</h1>
+        <p>Full admin can manage the store. Staff users can access only products and order management.</p>
+      </section>
 
-        {error && <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded-lg">{error}</p>}
+      <main className="admin-shell">
+        <div className="admin-grid">
+          <article className="admin-panel">
+            <h2>Secure Sign In</h2>
+            <div className="form-grid">
+              <label className="full-field">
+                Email / Username
+                <input type="email" autoComplete="username" placeholder="admin@mahalaxmifashionhub.com"
+                  value={email} onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()} required />
+              </label>
+              <label className="full-field">
+                Password
+                <input type="password" autoComplete="current-password" placeholder="Enter password"
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleLogin()} required />
+              </label>
+              {error && <p className="wiz-message full-field">{error}</p>}
+              <div className="form-actions">
+                <button className="button primary" type="button" onClick={handleLogin} disabled={loading}>
+                  {loading ? 'Logging in…' : 'Login'}
+                </button>
+                <Link className="button secondary" href="/">Back to Website</Link>
+              </div>
+            </div>
+          </article>
 
-        <div className="space-y-3">
-          <input
-            type="email"
-            placeholder="Admin Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B1A1A]"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            className="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B1A1A]"
-          />
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="btn-primary w-full">
-            {loading ? 'Logging in...' : 'Login to Admin'}
-          </button>
+          <article className="admin-panel" style={{ background: '#fdf0f3' }}>
+            <h2>Access Note</h2>
+            <p style={{ color: '#555', marginBottom: '.75rem', fontSize: '.92rem' }}>
+              <strong>Owner access</strong> is for store settings, reports, and password management.
+            </p>
+            <p style={{ color: '#555', marginBottom: '.75rem', fontSize: '.92rem' }}>
+              <strong>Staff access</strong> opens a limited workspace for Add Product, Product Listing, and Order Management only.
+            </p>
+            <p style={{ color: '#555', fontSize: '.92rem' }}>
+              Use separate staff credentials so daily work can continue without sharing the full owner password.
+            </p>
+          </article>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
