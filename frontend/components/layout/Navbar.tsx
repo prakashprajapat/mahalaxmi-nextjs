@@ -72,8 +72,7 @@ export default function Navbar() {
 
           <Link href="/" className="brand" aria-label="Mahalaxmi Fashion Hub home">
             <span className="brand-mark">
-              <img src="/logo.webp" alt="Mahalaxmi Fashion Hub logo" width="48" height="48"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <img src="/logo.webp" alt="Mahalaxmi Fashion Hub logo" width="48" height="48" />
             </span>
             <span>
               <strong>Mahalaxmi Fashion Hub</strong>

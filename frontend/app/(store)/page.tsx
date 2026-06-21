@@ -4,19 +4,10 @@ import ProductCard from '@/components/product/ProductCard';
 
 export const revalidate = 60;
 
-const categories = [
-  { label: 'Saree', href: '/products?category=saree', icon: '🥻', desc: 'Designer & ethnic sarees' },
-  { label: 'Nighty', href: '/products?category=nighty', icon: '🌙', desc: 'Comfortable nightwear' },
-  { label: 'Petticoat', href: '/products?category=petticoat', icon: '👗', desc: 'Quality inner skirts' },
-  { label: 'Women', href: '/products?category=women', icon: '👩', desc: "Women's fashion" },
-  { label: 'Men', href: '/products?category=men', icon: '👔', desc: "Men's wear" },
-  { label: 'Popline', href: '/products?category=popline', icon: '🧵', desc: 'Popline fabric rolls' },
-];
-
 export default async function HomePage() {
-  const { products } = await productsApi.getAll({ pageSize: 100 }).catch(() => ({ products: [] }));
+  const { products } = await productsApi.getAll({ pageSize: 100 }).catch(() => ({ products: [] as any[] }));
   const bestSellers = products.filter((p: any) => p.bestSeller).slice(0, 8);
-  const newArrivals = [...products].sort((a: any, b: any) => b.newest - a.newest).slice(0, 8);
+  const newArrivals = [...products].sort((a: any, b: any) => b.dbId - a.dbId).slice(0, 8);
 
   return (
     <>
@@ -28,11 +19,15 @@ export default async function HomePage() {
           className="hero-bg-img"
         />
         <div className="hero-content-overlay">
+          <p className="eyebrow" style={{ color: '#ffd6de' }}>New Arrivals 2026</p>
+          <h1 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: 800, margin: '0 0 .75rem', lineHeight: 1.15 }}>
+            Every Look,<br />A New Experience
+          </h1>
           <p className="hero-desc">
-            Designer sarees, daily nightwear, petticoats, and fabric essentials with a boutique feel, honest support, and fast WhatsApp ordering.
+            Designer sarees, daily nightwear, petticoats, and fabric essentials — boutique feel, honest support, fast WhatsApp ordering.
           </p>
           <div className="hero-actions">
-            <Link className="button primary" href="/products?category=saree">Shop Sarees</Link>
+            <Link className="button primary" href="/saree">Shop Sarees</Link>
             <Link className="button secondary" style={{ color: '#fff', borderColor: '#fff' }} href="/return-exchange">Return Policy</Link>
           </div>
           <div className="hero-badges">
@@ -46,25 +41,21 @@ export default async function HomePage() {
       {/* Category Grid */}
       <section className="section-wrap" id="categories">
         <h2 className="section-heading">Shop by Category</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem' }}>
-          {categories.map(cat => (
-            <Link key={cat.href} href={cat.href} style={{ textDecoration: 'none' }}>
-              <div style={{
-                background: '#fff',
-                border: '1.5px solid #e0e0e0',
-                borderRadius: '12px',
-                padding: '1.25rem 1rem',
-                textAlign: 'center',
-                transition: 'all .2s',
-                cursor: 'pointer',
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#a7354d'; (e.currentTarget as HTMLDivElement).style.background = '#fdf0f3'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e0e0e0'; (e.currentTarget as HTMLDivElement).style.background = '#fff'; }}
-              >
-                <div style={{ fontSize: '2.2rem', marginBottom: '.4rem' }}>{cat.icon}</div>
-                <div style={{ fontWeight: 700, color: '#a7354d', fontSize: '.95rem', marginBottom: '.2rem' }}>{cat.label}</div>
-                <div style={{ fontSize: '.77rem', color: '#888' }}>{cat.desc}</div>
-              </div>
+        <div className="category-grid">
+          {[
+            { label: 'Saree', href: '/saree', icon: '🥻', desc: 'Designer & ethnic sarees' },
+            { label: 'Nighty', href: '/nighty', icon: '🌙', desc: 'Comfortable nightwear' },
+            { label: 'Petticoat', href: '/petticoat', icon: '👗', desc: 'Quality inner skirts' },
+            { label: 'Women', href: '/women', icon: '👩', desc: "Women's fashion" },
+            { label: 'Men', href: '/men', icon: '👔', desc: "Men's wear" },
+            { label: 'Popline', href: '/popline', icon: '🧵', desc: 'Popline fabric rolls' },
+            { label: 'Nighty Cloth', href: '/nighty-cloth', icon: '🧶', desc: 'Fabric for tailoring' },
+            { label: 'Best Sellers', href: '/best-sellers', icon: '⭐', desc: 'Most loved products' },
+          ].map(cat => (
+            <Link key={cat.href} href={cat.href} className="category-card">
+              <div className="category-icon">{cat.icon}</div>
+              <div className="category-label">{cat.label}</div>
+              <div className="category-desc">{cat.desc}</div>
             </Link>
           ))}
         </div>
@@ -72,11 +63,11 @@ export default async function HomePage() {
 
       {/* Best Sellers */}
       {bestSellers.length > 0 && (
-        <section className="section-wrap" id="best-sellers" style={{ background: '#fdf0f3', maxWidth: '100%', padding: '2.5rem 0' }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 1.5rem' }}>
+        <section style={{ background: '#fdf0f3', padding: '2.5rem 0' }}>
+          <div className="section-wrap">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <h2 className="section-heading" style={{ margin: 0 }}>Best Sellers</h2>
-              <Link href="/products?bestSeller=true" style={{ color: '#a7354d', fontWeight: 600, fontSize: '.9rem' }}>View All →</Link>
+              <Link href="/best-sellers" style={{ color: '#a7354d', fontWeight: 600, fontSize: '.9rem' }}>View All →</Link>
             </div>
             <div className="products-grid">
               {bestSellers.map((p: any) => <ProductCard key={p.dbId} product={p} />)}
