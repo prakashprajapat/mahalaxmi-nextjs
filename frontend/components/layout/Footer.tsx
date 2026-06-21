@@ -8,8 +8,7 @@ export default function Footer() {
           <Link className="brand footer-brand" href="/">
             <span className="brand-mark">
               <img src="/logo.webp" alt="Mahalaxmi Fashion Hub logo" width="48" height="48"
-                style={{ borderRadius: '8px' }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                style={{ borderRadius: '8px' }} />
             </span>
             <span>
               <strong>Mahalaxmi Fashion Hub</strong>

@@ -104,6 +104,7 @@ export default function Navbar() {
 
         {/* Department Nav */}
         <nav className="department-nav" aria-label="Shop by department">
+          <Link href="/">Home</Link>
           <Link href="/products?category=saree">Saree</Link>
           <Link href="/products?category=women">Women</Link>
           <Link href="/products?category=men">Men</Link>
