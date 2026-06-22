@@ -597,3 +597,93 @@ button { cursor: pointer; font-family: inherit; }
   .otp-digit { width: 38px; height: 46px; font-size: 1.2rem; }
   .search { display: none; }
 }
+
+/* ─── Mobile Menu Button ─── */
+.site-menu-btn {
+  display: none;
+}
+
+/* ─── Cart Count Badge ─── */
+.cart-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 9px;
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 0 4px;
+  margin-left: 3px;
+}
+
+/* ─── Admin Mobile Menu ─── */
+.admin-mobile-menu-btn {
+  display: none !important;
+}
+
+/* ─── Account Address Card ─── */
+.address-card {
+  background: #fdf0f3;
+  border: 1.5px solid #f5c6cb;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+/* ─── Responsive – Mobile ─── */
+@media (max-width: 768px) {
+  .site-menu-btn {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: .25rem;
+  }
+
+  .policy-nav {
+    display: none;
+  }
+
+  .brand-actions .account-cta {
+    display: none;
+  }
+
+  .site-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-content {
+    margin-left: 0 !important;
+  }
+
+  .admin-topbar {
+    left: 0 !important;
+  }
+
+  .admin-mobile-menu-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-row {
+    flex-wrap: wrap;
+  }
+
+  .search {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

@@ -17,6 +17,7 @@ export default function Footer() {
           </Link>
           <p>Designer sarees, daily nightwear, petticoats and fabric essentials — curated with a boutique touch.</p>
           <p className="site-footer-contact">Ward No. 45, Near Mahadev Temple, Balotra, Rajasthan 344022</p>
+          <p className="site-footer-contact">📞 +91 9429429880</p>
         </div>
 
         <nav className="site-footer-col">
@@ -24,17 +25,31 @@ export default function Footer() {
           <Link href="/products?category=saree">Saree</Link>
           <Link href="/products?category=nighty">Nighty</Link>
           <Link href="/products?category=petticoat">Petticoat</Link>
-          <Link href="/products?bestSeller=true">Best Sellers</Link>
+          <Link href="/products?category=women">Women</Link>
+          <Link href="/products?category=men">Men</Link>
           <Link href="/products?category=popline">Popline</Link>
+          <Link href="/products?category=nighty-cloth">Nighty Cloth</Link>
+          <Link href="/products?bestSeller=true">Best Sellers</Link>
+        </nav>
+
+        <nav className="site-footer-col">
+          <h2>My Account</h2>
+          <Link href="/account">Login / Signup</Link>
+          <Link href="/orders">My Orders</Link>
+          <Link href="/wishlist">Wishlist</Link>
+          <Link href="/tracking">Track Order</Link>
+          <Link href="/cart">Shopping Cart</Link>
+          <Link href="/account/downloads">Downloads</Link>
         </nav>
 
         <nav className="site-footer-col">
           <h2>Help</h2>
-          <Link href="/tracking">Track Order</Link>
           <Link href="/return-exchange">Returns &amp; Exchange</Link>
           <Link href="/cancellation-policy">Cancellation Policy</Link>
           <Link href="/return-policy">Return Policy</Link>
-          <Link href="/account">My Account</Link>
+          <Link href="/shipping-delivery-policy">Shipping Policy</Link>
+          <Link href="/safety-center">Safety Center</Link>
+          <Link href="/contact">Contact Us</Link>
         </nav>
 
         <nav className="site-footer-col">
@@ -43,6 +58,7 @@ export default function Footer() {
           <a href="https://www.instagram.com/mahalaxmifashionhub.blt/" target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href="https://www.facebook.com/mahalaxmifashionhub.blt/" target="_blank" rel="noopener noreferrer">Facebook</a>
           <a href="mailto:contact@mahalaxmifashionhub.com">contact@mahalaxmifashionhub.com</a>
+          <Link href="/about-us">About Us</Link>
         </nav>
       </div>
 
@@ -53,6 +69,8 @@ export default function Footer() {
           <Link href="/return-policy">Returns</Link>
           <Link href="/cancellation-policy">Cancellation</Link>
           <Link href="/terms-conditions">Terms</Link>
+          <Link href="/shipping-delivery-policy">Shipping</Link>
+          <Link href="/safety-center">Safety</Link>
         </nav>
       </div>
     </footer>

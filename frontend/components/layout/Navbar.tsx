@@ -26,6 +26,9 @@ export default function Navbar() {
     };
   }, []);
 
+  // Close menu on route change
+  useEffect(() => { setMenuOpen(false); }, []);
+
   return (
     <>
       {/* Topbar */}
@@ -51,24 +54,21 @@ export default function Navbar() {
           <Link href="/return-exchange">Refund &amp; Exchange Policy</Link>
           <Link href="/privacy-policy">Privacy Policy</Link>
           <Link href="/tracking">Track Order</Link>
+          <Link href="/forgot-password">Forgot Password</Link>
+          <Link href="/safety-center">Safety Center</Link>
         </nav>
 
         <div className="brand-row">
-          {/* Mobile menu */}
-          <details className="site-menu" style={{ display: 'none' }} onToggle={e => setMenuOpen((e.target as HTMLDetailsElement).open)}>
-            <summary aria-label="Open customer menu">
-              <span className="site-menu-lines">
-                <span /><span /><span />
-              </span>
-            </summary>
-            <div className="site-menu-panel">
-              <Link className="account-cta menu-account-cta" href="/account">Login / Signup</Link>
-              <Link href="/account">My Account</Link>
-              <Link href="/account?tab=orders">My Orders</Link>
-              <Link href="/wishlist">Wishlist</Link>
-              <Link href="/tracking">Track Order</Link>
-            </div>
-          </details>
+          {/* Mobile hamburger */}
+          <button
+            className="site-menu-btn"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Open menu"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '.25rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span style={{ display: 'block', width: '22px', height: '2px', background: '#333', borderRadius: '2px' }} />
+            <span style={{ display: 'block', width: '22px', height: '2px', background: '#333', borderRadius: '2px' }} />
+            <span style={{ display: 'block', width: '22px', height: '2px', background: '#333', borderRadius: '2px' }} />
+          </button>
 
           <Link href="/" className="brand" aria-label="Mahalaxmi Fashion Hub home">
             <span className="brand-mark">
@@ -95,7 +95,9 @@ export default function Navbar() {
           </form>
 
           <div className="brand-actions">
-            <Link className="cart-link" href="/cart">Cart <span>{count > 0 ? count : 0}</span></Link>
+            <Link className="cart-link" href="/cart">
+              Cart <span className="cart-count">{count > 0 ? count : 0}</span>
+            </Link>
             <Link className="account-cta" href="/account">
               {isLoggedIn ? 'My Account' : 'Login / Signup'}
             </Link>
@@ -115,6 +117,82 @@ export default function Navbar() {
           <Link href="/products?category=nighty-cloth">Nighty Cloth</Link>
         </nav>
       </header>
+
+      {/* Mobile Menu Drawer */}
+      {menuOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 500 }}>
+          {/* Backdrop */}
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.5)' }} onClick={() => setMenuOpen(false)} />
+          {/* Panel */}
+          <nav style={{
+            position: 'absolute', top: 0, left: 0, bottom: 0, width: '280px',
+            background: '#fff', padding: '1.5rem 0', overflowY: 'auto',
+            boxShadow: '4px 0 16px rgba(0,0,0,.15)',
+          }}>
+            <div style={{ padding: '0 1.25rem 1rem', borderBottom: '1px solid #eee', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong style={{ color: '#a7354d' }}>Mahalaxmi Fashion Hub</strong>
+              <button onClick={() => setMenuOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.3rem', cursor: 'pointer', color: '#888' }}>✕</button>
+            </div>
+
+            {/* Auth Links */}
+            <div style={{ padding: '0 1.25rem 1rem', borderBottom: '1px solid #eee', marginBottom: '1rem' }}>
+              <Link href="/account" onClick={() => setMenuOpen(false)}
+                className="account-cta menu-account-cta"
+                style={{ display: 'block', textAlign: 'center', padding: '.6rem', borderRadius: '8px', marginBottom: '.5rem' }}>
+                {isLoggedIn ? 'My Account' : 'Login / Signup'}
+              </Link>
+              {isLoggedIn && (
+                <Link href="/orders" onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', padding: '.5rem', color: '#555', fontSize: '.9rem', textDecoration: 'none' }}>📦 My Orders</Link>
+              )}
+              <Link href="/wishlist" onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '.5rem', color: '#555', fontSize: '.9rem', textDecoration: 'none' }}>❤️ Wishlist</Link>
+              <Link href="/cart" onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '.5rem', color: '#555', fontSize: '.9rem', textDecoration: 'none' }}>🛒 Cart ({count})</Link>
+              <Link href="/tracking" onClick={() => setMenuOpen(false)}
+                style={{ display: 'block', padding: '.5rem', color: '#555', fontSize: '.9rem', textDecoration: 'none' }}>🚚 Track Order</Link>
+            </div>
+
+            {/* Category Links */}
+            <div style={{ padding: '0 1.25rem' }}>
+              <p style={{ fontSize: '.75rem', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.5rem' }}>Shop by Category</p>
+              {[
+                { href: '/saree', label: '🥻 Saree' },
+                { href: '/women', label: '👩 Women' },
+                { href: '/men', label: '👔 Men' },
+                { href: '/nighty', label: '🌙 Nighty' },
+                { href: '/petticoat', label: '👗 Petticoat' },
+                { href: '/popline', label: '🧵 Popline' },
+                { href: '/nighty-cloth', label: '🧶 Nighty Cloth' },
+                { href: '/best-sellers', label: '⭐ Best Sellers' },
+              ].map(l => (
+                <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', padding: '.5rem', color: '#333', fontSize: '.9rem', textDecoration: 'none', fontWeight: 500 }}>
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Policy Links */}
+            <div style={{ padding: '1rem 1.25rem 0', borderTop: '1px solid #eee', marginTop: '1rem' }}>
+              <p style={{ fontSize: '.75rem', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.5rem' }}>Help & Policies</p>
+              {[
+                { href: '/cancellation-policy', label: 'Cancellation Policy' },
+                { href: '/return-policy', label: 'Return Policy' },
+                { href: '/return-exchange', label: 'Refund & Exchange' },
+                { href: '/privacy-policy', label: 'Privacy Policy' },
+                { href: '/safety-center', label: 'Safety Center' },
+                { href: '/contact', label: 'Contact Us' },
+              ].map(l => (
+                <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', padding: '.4rem', color: '#666', fontSize: '.85rem', textDecoration: 'none' }}>
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        </div>
+      )}
 
       {/* WhatsApp Float */}
       <a className="whatsapp-float" href="https://wa.me/919429429880"

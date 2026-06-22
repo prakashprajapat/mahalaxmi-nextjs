@@ -8,14 +8,14 @@ import type { Customer } from '@/types';
 
 const MENU_LINKS = [
   { href: '/orders', label: '📦 My Orders' },
-  { href: '/account/wishlist', label: '❤️ Wishlist' },
-  { href: '/account/address', label: '📍 Address' },
-  { href: '/account/edit', label: '✏️ Edit Account' },
+  { href: '/wishlist', label: '❤️ Wishlist' },
+  { href: '/account/address', label: '📍 My Address' },
+  { href: '/account/edit', label: '✏️ Edit Profile' },
   { href: '/account/pan', label: '🪪 PAN Card' },
   { href: '/account/newsletter', label: '📧 Newsletter' },
   { href: '/account/saved-cards', label: '💳 Saved Cards' },
   { href: '/account/downloads', label: '📥 Downloads' },
-  { href: '/reviews', label: '⭐ Reviews' },
+  { href: '/reviews', label: '⭐ My Reviews' },
   { href: '/tracking', label: '🚚 Track Order' },
 ];
 
@@ -44,6 +44,12 @@ export default function AccountPage() {
     } finally { setLoading(false); }
   };
 
+  const handleLogout = () => {
+    logout();
+    setCustomer(null);
+    window.dispatchEvent(new Event('auth-changed'));
+  };
+
   if (customer) return (
     <>
       <section className="page-hero">
@@ -56,8 +62,7 @@ export default function AccountPage() {
         <nav className="account-menu">
           <Link className="active" href="/account">Dashboard</Link>
           {MENU_LINKS.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}
-          <Link href="#" onClick={e => { e.preventDefault(); logout(); setCustomer(null); window.dispatchEvent(new Event('auth-changed')); }}
-            style={{ color: '#e67e22' }}>🔓 Logout</Link>
+          <Link href="#" onClick={e => { e.preventDefault(); handleLogout(); }} style={{ color: '#e67e22' }}>🔓 Logout</Link>
           <Link href="/account/deactivate" style={{ color: '#c0392b', fontSize: '.85rem' }}>Deactivate</Link>
           <Link href="/account/delete" style={{ color: '#c0392b', fontSize: '.85rem' }}>Delete Account</Link>
         </nav>
@@ -68,10 +73,10 @@ export default function AccountPage() {
             <div className="form-grid" style={{ pointerEvents: 'none' }}>
               <label>Name<input value={`${customer.firstName} ${customer.lastName}`} readOnly /></label>
               <label>Customer ID<input value={customer.customerCode || '—'} readOnly /></label>
-              <label>Email<input value={customer.email} readOnly /></label>
+              <label>Email<input value={customer.email ?? '—'} readOnly /></label>
               <label>Phone<input value={customer.phone} readOnly /></label>
               <label className="full-field">Address
-                <input value={[customer.addrLine1, customer.addrLine2, customer.postOffice, customer.district, customer.state, customer.pincode].filter(Boolean).join(', ')} readOnly />
+                <input value={[customer.addrLine1, customer.addrLine2, customer.postOffice, customer.district, customer.state, customer.pincode].filter(Boolean).join(', ') || '—'} readOnly />
               </label>
               <label>Account Status
                 <input value={customer.accountStatus || 'Active'} readOnly />
@@ -86,7 +91,7 @@ export default function AccountPage() {
                   <Link key={l.href} href={l.href} style={{
                     display: 'block', padding: '.75rem', background: '#fdf0f3', borderRadius: '8px',
                     textDecoration: 'none', color: '#a7354d', fontSize: '.85rem', fontWeight: 600,
-                    textAlign: 'center', transition: 'background .15s',
+                    textAlign: 'center',
                   }}>
                     {l.label}
                   </Link>
@@ -136,7 +141,7 @@ export default function AccountPage() {
                   value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
               </label>
 
-              {error && <p className="wiz-message full-field">{error}</p>}
+              {error && <p className="wiz-message full-field" style={{ color: '#c0392b' }}>{error}</p>}
 
               <div className="form-actions">
                 <button type="submit" className="button primary" disabled={loading}>

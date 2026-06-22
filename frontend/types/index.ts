@@ -12,6 +12,11 @@ export interface Product {
   newest: number;
   image?: string;
   bestSeller: boolean;
+  extraJson?: string;
+  hsnCode?: string;
+  gstRate?: number;
+  qty?: number;
+  packOf?: number;
 }
 
 export interface CartItem extends Product {
@@ -28,6 +33,7 @@ export interface Customer {
   email: string;
   phone: string;
   dateOfBirth?: string;
+  marriageDate?: string;
   addrLine1: string;
   addrLine2: string;
   pincode: string;
@@ -38,6 +44,9 @@ export interface Customer {
   profileStatus: string;
   emailVerified: boolean;
   phoneVerified: boolean;
+  marketingConsent?: boolean;
+  panNumber?: string;
+  panName?: string;
   createdAt: string;
 }
 
@@ -81,6 +90,19 @@ export interface Order {
   cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Review {
+  id: number;
+  productId: number;
+  productName?: string;
+  customerId?: number;
+  customerName?: string;
+  rating: number;
+  text: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  orderId?: string;
+  createdAt?: string;
 }
 
 export interface ApiResponse<T> {

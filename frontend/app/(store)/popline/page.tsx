@@ -1,45 +1,24 @@
-import type { Metadata } from "next";
-import { productsApi } from "@/lib/api";
-import ProductCard from "@/components/product/ProductCard";
-import Link from "next/link";
+import type { Metadata } from 'next';
+import { productsApi } from '@/lib/api';
+import CategoryPageContent from '@/components/product/CategoryPageContent';
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Popline | Mahalaxmi Fashion Hub",
-  description: "Premium popline fabric rolls for tailoring",
+  title: 'Popline | Mahalaxmi Fashion Hub',
+  description: 'Popline cotton fabric and printed dress material',
 };
 
 export default async function PoplinePage() {
-  const { products } = await productsApi.getAll({ category: "popline", pageSize: 100 }).catch(() => ({ products: [] }));
-
+  const { products } = await productsApi.getAll({ category: 'popline', pageSize: 200 }).catch(() => ({ products: [] }));
   return (
     <>
       <section className="page-hero">
         <p className="eyebrow">Shop by Category</p>
         <h1>🧵 Popline</h1>
-        <p>Premium popline fabric rolls for tailoring</p>
+        <p>Popline cotton fabric and printed dress material</p>
       </section>
-
-      <main className="section-wrap">
-        {products.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#888" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🧵</div>
-            <p>No products found in this category yet.</p>
-            <Link href="/products" className="button primary" style={{ display: "inline-block", marginTop: "1rem" }}>Browse All Products</Link>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <h2 className="section-heading" style={{ margin: 0 }}>Popline ({products.length})</h2>
-              <Link href="/products?category=popline" style={{ color: "#a7354d", fontWeight: 600, fontSize: ".9rem" }}>View All →</Link>
-            </div>
-            <div className="products-grid">
-              {products.map((p: any) => <ProductCard key={p.dbId} product={p} />)}
-            </div>
-          </>
-        )}
-      </main>
+      <CategoryPageContent products={products as any} category="Popline" icon="🧵" desc="Popline cotton fabric and printed dress material" allHref="/products?category=popline" />
     </>
   );
 }

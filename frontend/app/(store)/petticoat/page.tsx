@@ -1,45 +1,24 @@
-import type { Metadata } from "next";
-import { productsApi } from "@/lib/api";
-import ProductCard from "@/components/product/ProductCard";
-import Link from "next/link";
+import type { Metadata } from 'next';
+import { productsApi } from '@/lib/api';
+import CategoryPageContent from '@/components/product/CategoryPageContent';
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Petticoat | Mahalaxmi Fashion Hub",
-  description: "Quality inner skirts in a range of sizes and colours",
+  title: 'Petticoat | Mahalaxmi Fashion Hub',
+  description: 'Cotton and shantoon petticoats in all waist sizes',
 };
 
 export default async function PetticoatPage() {
-  const { products } = await productsApi.getAll({ category: "petticoat", pageSize: 100 }).catch(() => ({ products: [] }));
-
+  const { products } = await productsApi.getAll({ category: 'petticoat', pageSize: 200 }).catch(() => ({ products: [] }));
   return (
     <>
       <section className="page-hero">
         <p className="eyebrow">Shop by Category</p>
         <h1>👗 Petticoat</h1>
-        <p>Quality inner skirts in a range of sizes and colours</p>
+        <p>Cotton and shantoon petticoats in all waist sizes</p>
       </section>
-
-      <main className="section-wrap">
-        {products.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#888" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👗</div>
-            <p>No products found in this category yet.</p>
-            <Link href="/products" className="button primary" style={{ display: "inline-block", marginTop: "1rem" }}>Browse All Products</Link>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <h2 className="section-heading" style={{ margin: 0 }}>Petticoat ({products.length})</h2>
-              <Link href="/products?category=petticoat" style={{ color: "#a7354d", fontWeight: 600, fontSize: ".9rem" }}>View All →</Link>
-            </div>
-            <div className="products-grid">
-              {products.map((p: any) => <ProductCard key={p.dbId} product={p} />)}
-            </div>
-          </>
-        )}
-      </main>
+      <CategoryPageContent products={products as any} category="Petticoat" icon="👗" desc="Cotton and shantoon petticoats in all waist sizes" allHref="/products?category=petticoat" />
     </>
   );
 }

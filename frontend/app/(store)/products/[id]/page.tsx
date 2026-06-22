@@ -2,26 +2,36 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { productsApi } from '@/lib/api';
+import { productsApi, reviewsApi } from '@/lib/api';
 import { addToCart } from '@/lib/cart';
 import { addToWishlist, isInWishlist } from '@/lib/wishlist';
-import type { Product } from '@/types';
+import { getCustomer, getToken } from '@/lib/auth';
+import type { Product, Review } from '@/types';
 
 interface ExtraJson {
   sizes?: string[];
   colors?: string[];
   colorCodes?: Record<string, string>;
   variantMatrix?: Record<string, number>;
-  sizeStock?: Record<string, number>;
-  colorStock?: Record<string, number>;
   images?: string[];
   packImages?: string[];
+}
+
+function Stars({ n, onClick }: { n: number; onClick?: (v: number) => void }) {
+  return (
+    <span style={{ cursor: onClick ? 'pointer' : 'default' }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} onClick={() => onClick?.(i)} style={{ color: i <= n ? '#f59e0b' : '#ddd', fontSize: '1.1rem' }}>★</span>
+      ))}
+    </span>
+  );
 }
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [extra, setExtra] = useState<ExtraJson>({});
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
@@ -29,6 +39,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Review form
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewMsg, setReviewMsg] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     productsApi.getById(Number(params.id))
@@ -42,12 +57,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    reviewsApi.getByProduct(Number(params.id))
+      .then(r => setReviews(r.reviews ?? []))
+      .catch(() => setReviews([]));
   }, [params.id]);
 
   if (loading) return (
-    <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
-      Loading…
-    </div>
+    <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>Loading…</div>
   );
   if (!product) return (
     <div style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
@@ -59,21 +76,18 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const price = product.discountPrice ?? product.price;
   const saving = product.price > price ? Math.round(((product.price - price) / product.price) * 100) : 0;
 
-  // Build gallery
   const gallery: string[] = [];
   if (product.image) gallery.push(product.image);
   (extra.images ?? []).forEach(img => { if (img && !gallery.includes(img)) gallery.push(img); });
   (extra.packImages ?? []).forEach(img => { if (img && !gallery.includes(img)) gallery.push(img); });
 
-  // Sizes from variantMatrix keys or sizes array
   const sizes: string[] = extra.sizes ?? (extra.variantMatrix ? [...new Set(Object.keys(extra.variantMatrix).map(k => k.split('|')[0]))] : []);
   const colors: string[] = extra.colors ?? (extra.variantMatrix ? [...new Set(Object.keys(extra.variantMatrix).map(k => k.split('|')[1]).filter(Boolean))] : []);
   const colorCodes: Record<string, string> = extra.colorCodes ?? {};
 
-  // Stock for selected variant
   const variantKey = colors.length > 0 ? `${size}|${color}` : size;
   const variantStock = extra.variantMatrix ? (extra.variantMatrix[variantKey] ?? null) : null;
-  const outOfStock = variantStock !== null && variantStock === 0;
+  const outOfStock = product.stock === 'Out of Stock' || (variantStock !== null && variantStock === 0);
 
   const handleAddToCart = () => {
     if (outOfStock) return;
@@ -83,10 +97,23 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const handleWishlist = () => {
-    addToWishlist(product);
-    setWishlisted(true);
+  const handleWishlist = () => { addToWishlist(product); setWishlisted(true); };
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const customer = getCustomer();
+    if (!customer) { setReviewMsg('Please login to submit a review.'); return; }
+    if (!reviewText.trim()) { setReviewMsg('Please write your review.'); return; }
+    setSubmittingReview(true); setReviewMsg('');
+    try {
+      await reviewsApi.submit({ productId: product.dbId, rating, text: reviewText.trim() }, getToken() ?? '');
+      setReviewMsg('✅ Review submitted! It will appear after approval.');
+      setReviewText(''); setRating(5);
+    } catch (e) { setReviewMsg('❌ ' + (e as Error).message); }
+    finally { setSubmittingReview(false); }
   };
+
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
 
   return (
     <>
@@ -94,7 +121,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       <nav style={{ background: '#f9f9f9', borderBottom: '1px solid #eee', padding: '.6rem 1.5rem', fontSize: '.83rem', color: '#888' }}>
         <Link href="/" style={{ color: '#a7354d' }}>Home</Link> &rsaquo;{' '}
         <Link href="/products" style={{ color: '#a7354d' }}>Products</Link> &rsaquo;{' '}
-        {product.category && <><Link href={`/${product.category}`} style={{ color: '#a7354d' }}>{product.category}</Link> &rsaquo; </>}
+        {product.category && <><Link href={`/${product.category.toLowerCase().replace(' ','-')}`} style={{ color: '#a7354d' }}>{product.category}</Link> &rsaquo; </>}
         <span>{product.name}</span>
       </nav>
 
@@ -103,17 +130,13 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
           {/* Image Gallery */}
           <div>
-            {/* Main Image */}
             <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '3/4', background: '#f5f5f5', marginBottom: '.75rem' }}>
-              {activeImg ? (
-                <img src={activeImg} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#ddd' }}>👗</div>
-              )}
+              {activeImg
+                ? <img src={activeImg} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#ddd' }}>👗</div>}
               {product.bestSeller && <span className="badge badge-yellow" style={{ position: 'absolute', top: 12, left: 12 }}>Best Seller</span>}
               {saving > 0 && <span className="badge badge-red" style={{ position: 'absolute', top: product.bestSeller ? 44 : 12, left: 12 }}>{saving}% off</span>}
             </div>
-            {/* Thumbnails */}
             {gallery.length > 1 && (
               <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                 {gallery.map((img, i) => (
@@ -122,7 +145,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                     border: activeImg === img ? '2px solid #a7354d' : '2px solid #eee',
                     padding: 0, cursor: 'pointer', background: '#f5f5f5', flexShrink: 0,
                   }}>
-                    <img src={img} alt={`View ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={img} alt={`View ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </button>
                 ))}
               </div>
@@ -132,13 +155,16 @@ export default function ProductPage({ params }: { params: { id: string } }) {
           {/* Details */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div>
-              <p style={{ fontSize: '.78rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '.35rem' }}>
-                {product.category}
-              </p>
+              <p style={{ fontSize: '.78rem', color: '#aaa', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '.35rem' }}>{product.category}</p>
               <h1 style={{ fontSize: '1.6rem', fontWeight: 700, margin: '0 0 .5rem', color: '#1a1a1a', lineHeight: 1.25 }}>{product.name}</h1>
-              <p style={{ fontSize: '.85rem', color: product.stock === 'In Stock' ? '#27ae60' : '#e74c3c', fontWeight: 600 }}>
-                {product.stock}
-              </p>
+              {avgRating && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.25rem' }}>
+                  <Stars n={Math.round(Number(avgRating))} />
+                  <span style={{ fontSize: '.85rem', color: '#555', fontWeight: 600 }}>{avgRating}</span>
+                  <span style={{ fontSize: '.8rem', color: '#aaa' }}>({reviews.length} review{reviews.length !== 1 ? 's' : ''})</span>
+                </div>
+              )}
+              <p style={{ fontSize: '.85rem', color: product.stock === 'In Stock' ? '#27ae60' : '#e74c3c', fontWeight: 600 }}>{product.stock}</p>
             </div>
 
             {/* Price */}
@@ -147,14 +173,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               {saving > 0 && (
                 <>
                   <span className="price-orig" style={{ fontSize: '1.1rem' }}>₹{product.price.toLocaleString('en-IN')}</span>
-                  <span style={{ background: '#e8f5e9', color: '#27ae60', padding: '.2rem .6rem', borderRadius: '20px', fontSize: '.82rem', fontWeight: 700 }}>
-                    Save {saving}%
-                  </span>
+                  <span style={{ background: '#e8f5e9', color: '#27ae60', padding: '.2rem .6rem', borderRadius: '20px', fontSize: '.82rem', fontWeight: 700 }}>Save {saving}%</span>
                 </>
               )}
             </div>
 
-            {/* Color Chips */}
+            {/* Colors */}
             {colors.length > 0 && (
               <div>
                 <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>
@@ -167,14 +191,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                       background: colorCodes[c] ?? '#ccc',
                       border: color === c ? '3px solid #a7354d' : '2px solid #ddd',
                       cursor: 'pointer', outline: color === c ? '2px solid #a7354d' : 'none',
-                      outlineOffset: '2px', transition: 'all .15s',
+                      outlineOffset: '2px',
                     }} />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Size Chips */}
+            {/* Sizes */}
             {sizes.length > 0 && (
               <div>
                 <p style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.5rem' }}>Select Size</p>
@@ -190,7 +214,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                         background: oos ? '#f5f5f5' : size === s ? '#a7354d' : '#fff',
                         color: oos ? '#ccc' : size === s ? '#fff' : '#333',
                         fontSize: '.85rem', fontWeight: 600,
-                        cursor: oos ? 'not-allowed' : 'pointer', transition: 'all .15s',
+                        cursor: oos ? 'not-allowed' : 'pointer',
                         textDecoration: oos ? 'line-through' : 'none',
                       }}>{s}</button>
                     );
@@ -208,9 +232,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem' }}>
               <span style={{ fontWeight: 600, fontSize: '.9rem' }}>Quantity:</span>
               <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                <button onClick={() => setQty(q => Math.max(1, q-1))} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem' }}>−</button>
                 <span style={{ width: '36px', textAlign: 'center', fontWeight: 700 }}>{qty}</span>
-                <button onClick={() => setQty(q => q + 1)} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                <button onClick={() => setQty(q => q+1)} style={{ width: '36px', height: '36px', border: 'none', background: '#f5f5f5', cursor: 'pointer', fontSize: '1.1rem' }}>+</button>
               </div>
             </div>
 
@@ -229,7 +253,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             </button>
 
             {/* WhatsApp */}
-            <a href={`https://wa.me/919429429880?text=Hi, I'm interested in: ${product.name}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '.5rem', color: '#25d366', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none' }}>
+            <a href={`https://wa.me/919429429880?text=Hi, I'm interested in: ${encodeURIComponent(product.name)}`}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '.5rem', color: '#25d366', fontWeight: 600, fontSize: '.9rem', textDecoration: 'none' }}>
               <span style={{ fontSize: '1.2rem' }}>💬</span> Order on WhatsApp
             </a>
 
@@ -253,6 +279,63 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   {b.text}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div style={{ marginTop: '3rem', borderTop: '2px solid #eee', paddingTop: '2rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '1.5rem' }}>
+            Customer Reviews {avgRating && <span style={{ fontSize: '1rem', color: '#f59e0b', fontWeight: 800 }}>★ {avgRating}</span>}
+            <span style={{ fontSize: '.85rem', color: '#aaa', fontWeight: 400, marginLeft: '.5rem' }}>({reviews.length})</span>
+          </h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            {/* Reviews List */}
+            <div>
+              {reviews.length === 0 ? (
+                <p style={{ color: '#aaa', fontStyle: 'italic' }}>No reviews yet. Be the first to review!</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {reviews.map(r => (
+                    <div key={r.id} style={{ background: '#f9f9f9', borderRadius: '10px', padding: '1rem', border: '1px solid #eee' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '.5rem' }}>
+                        <div>
+                          <span style={{ fontWeight: 700, fontSize: '.9rem' }}>{r.customerName || 'Customer'}</span>
+                          <div style={{ marginTop: '.15rem' }}><Stars n={r.rating} /></div>
+                        </div>
+                        {r.createdAt && (
+                          <span style={{ fontSize: '.75rem', color: '#aaa' }}>
+                            {new Date(r.createdAt).toLocaleDateString('en-IN')}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '.88rem', color: '#555', lineHeight: 1.6, margin: 0 }}>{r.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Write a Review */}
+            <div style={{ background: '#fdf0f3', borderRadius: '12px', padding: '1.25rem', border: '1.5px solid #f5c6cb' }}>
+              <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '1rem', color: '#a7354d' }}>Write a Review</h3>
+              <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '.82rem', fontWeight: 600, display: 'block', marginBottom: '.35rem' }}>Your Rating</label>
+                  <Stars n={rating} onClick={setRating} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '.82rem', fontWeight: 600, display: 'block', marginBottom: '.35rem' }}>Your Review</label>
+                  <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} rows={4}
+                    placeholder="Share your experience..."
+                    style={{ width: '100%', border: '1.5px solid #ddd', borderRadius: '8px', padding: '.6rem .75rem', fontSize: '.88rem', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                </div>
+                {reviewMsg && <p style={{ fontSize: '.85rem', color: reviewMsg.startsWith('✅') ? '#27ae60' : '#c0392b', fontWeight: 600 }}>{reviewMsg}</p>}
+                <button type="submit" disabled={submittingReview} className="button primary" style={{ alignSelf: 'flex-start' }}>
+                  {submittingReview ? 'Submitting…' : 'Submit Review'}
+                </button>
+              </form>
             </div>
           </div>
         </div>
